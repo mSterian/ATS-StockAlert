@@ -1,0 +1,74 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net472</TargetFramework>
+    <LangVersion>11</LangVersion>
+    <AssemblyName>StockAlert</AssemblyName>
+    <RootNamespace>StockAlert</RootNamespace>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <StormPath>F:\Games\Steam\steamapps\common\Against the Storm</StormPath>
+    <BepInExPath>F:\Games\Steam\steamapps\common\Against the Storm\BepInEx</BepInExPath>
+    <GameManaged>$(StormPath)\Against The Storm_Data\Managed</GameManaged>
+    <ApiPath>$(BepInExPath)\plugins\ATS_API_Devs-API-3.7.0</ApiPath>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- BepInEx compile-time reference but do NOT copy into output -->
+    <Reference Include="BepInEx">
+      <HintPath>$(BepInExPath)\core\BepInEx.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+
+    <!-- ATS API compile-time reference but do NOT copy into output -->
+    <Reference Include="API">
+      <HintPath>$(ApiPath)\API.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+
+    <!-- Unity modules required for IMGUI, Input, and text rendering -->
+    <Reference Include="UnityEngine">
+      <HintPath>$(GameManaged)\UnityEngine.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+
+    <Reference Include="UnityEngine.IMGUIModule">
+      <HintPath>$(GameManaged)\UnityEngine.IMGUIModule.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+
+    <Reference Include="UnityEngine.TextRenderingModule">
+      <HintPath>$(GameManaged)\UnityEngine.TextRenderingModule.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+
+    <Reference Include="UnityEngine.InputLegacyModule">
+      <HintPath>$(GameManaged)\UnityEngine.InputLegacyModule.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+
+    <Reference Include="UnityEngine.CoreModule">
+      <HintPath>$(GameManaged)\UnityEngine.CoreModule.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+  </ItemGroup>
+
+  <!-- Copy built DLL into BepInEx/plugins -->
+  <Target Name="CopyToBepInExPlugins" AfterTargets="Build">
+    <ItemGroup>
+      <_BuiltDll Include="$(OutputPath)$(AssemblyName).dll" />
+    </ItemGroup>
+    <Message Importance="high" Text="Copying $(AssemblyName).dll to $(BepInExPath)\plugins" />
+    <Copy SourceFiles="@(_BuiltDll)" DestinationFolder="$(BepInExPath)\plugins" SkipUnchangedFiles="true" />
+  </Target>
+
+  <PropertyGroup>
+    <DebugType>portable</DebugType>
+    <DebugSymbols>true</DebugSymbols>
+    <Nullable>disable</Nullable>
+  </PropertyGroup>
+
+</Project>

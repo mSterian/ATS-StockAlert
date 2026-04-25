@@ -1,33 +1,48 @@
+using System.Collections.Generic;
+using BepInEx;
 using BepInEx.Configuration;
-using BepInEx.Logging;
-using UnityEngine;
 
 namespace StockAlert
 {
-    internal static class ConfigManager
+    public static class ConfigManager
     {
-        public static ConfigEntry<KeyCode> ToggleKey;
-        public static ConfigEntry<string> SavedThresholds;
-        public static ConfigEntry<string> NameOverrides;
-        public static ConfigEntry<bool> VerboseAssemblyDiagnostics;
+        private static ConfigFile _config;
 
-        public static void Init(ConfigFile cfg, ManualLogSource logger,
-            out ConfigEntry<KeyCode> toggleKey,
-            out ConfigEntry<string> savedThresholds,
-            out ConfigEntry<string> nameOverrides,
-            out ConfigEntry<bool> verboseAssemblyDiagnostics)
+        private static readonly Dictionary<string, ConfigEntry<bool>> _enabled = new();
+        private static readonly Dictionary<string, ConfigEntry<int>> _thresholds = new();
+
+        public static void Load()
         {
-            toggleKey = cfg.Bind("General", "ToggleKey", KeyCode.F8, "Key to toggle settings");
-            savedThresholds = cfg.Bind("General", "SavedThresholds", string.Empty, "Saved thresholds (format: ID:threshold per line)");
-            nameOverrides = cfg.Bind("General", "NameOverrides", string.Empty, "Optional name overrides (format: ID=Name per line)");
-            verboseAssemblyDiagnostics = cfg.Bind("Diagnostics", "VerboseAssemblyLogging", false,
-                "If true, log full assembly->type->method details. Disable to avoid huge logs.");
+            _config = new ConfigFile(Paths.ConfigPath + "\\StockAlert.cfg", true);
+        }
 
-            // mirror to static holders
-            ToggleKey = toggleKey;
-            SavedThresholds = savedThresholds;
-            NameOverrides = nameOverrides;
-            VerboseAssemblyDiagnostics = verboseAssemblyDiagnostics;
+        public static void EnsureGoodConfig(GoodInfo g)
+        {
+            if (!_enabled.ContainsKey(g.Id))
+            {
+                _enabled[g.Id] = _config.Bind(
+                    $"Good.{g.Id}", "Enabled", false,
+                    $"Show {g.DisplayName} in HUD"
+                );
+            }
+
+            if (!_thresholds.ContainsKey(g.Id))
+            {
+                _thresholds[g.Id] = _config.Bind(
+                    $"Good.{g.Id}", "Threshold", 0,
+                    $"Threshold for {g.DisplayName}"
+                );
+            }
+
+            g.Enabled = _enabled[g.Id].Value;
+            g.Threshold = _thresholds[g.Id].Value;
+        }
+
+        public static void UpdateGoodConfig(GoodInfo g)
+        {
+            _enabled[g.Id].Value = g.Enabled;
+            _thresholds[g.Id].Value = g.Threshold;
+            _config.Save();
         }
     }
 }

@@ -1,65 +1,58 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <!--
-    StockAlert.csproj
-    - TargetFramework: net472 (Unity / BepInEx compatible)
-    - Set GameDir to your local game installation root if you want the project to resolve Unity/BepInEx assemblies automatically.
-      Example: <GameDir>F:\Games\Steam\steamapps\common\Against the Storm</GameDir>
-    - If you prefer, remove the <HintPath> entries and add references in your IDE, or copy the required DLLs into a "lib" folder and reference them from there.
-  -->
 
   <PropertyGroup>
-    <TargetFramework>net472</TargetFramework>
+    <TargetFramework>netstandard2.0</TargetFramework>
     <AssemblyName>StockAlert</AssemblyName>
-    <RootNamespace>StockAlert</RootNamespace>
-    <OutputPath>bin\$(Configuration)\</OutputPath>
-    <Deterministic>true</Deterministic>
     <LangVersion>latest</LangVersion>
 
-    <!--
-      Set GameDir to your game installation root if you want the project to resolve Unity/BepInEx assemblies automatically.
-      Replace the example path below with your actual game folder or set it in a Directory.Build.props or via MSBuild properties.
-    -->
-    <GameDir>F:\Games\Steam\steamapps\common\Against the Storm</GameDir>
+    <!-- CHANGE THIS IF YOUR ATS PATH IS DIFFERENT -->
+    <StormPath>F:\Games\Steam\steamapps\common\Against the Storm</StormPath>
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- BepInEx core (required at compile time for BaseUnityPlugin, ConfigEntry, ManualLogSource, etc.) -->
+    <!-- BepInEx -->
     <Reference Include="BepInEx">
-      <HintPath>$(GameDir)\BepInEx\core\BepInEx.dll</HintPath>
-      <Private>False</Private>
+      <HintPath>$(StormPath)\BepInEx\core\BepInEx.dll</HintPath>
+    </Reference>
+    <Reference Include="0Harmony">
+      <HintPath>$(StormPath)\BepInEx\core\0Harmony.dll</HintPath>
     </Reference>
 
-    <!-- UnityEngine assemblies (common layout: <Game>_Data\Managed\*.dll) -->
-    <!-- Adjust the filenames / paths if your game uses different module names or locations -->
-    <Reference Include="UnityEngine.CoreModule">
-      <HintPath>$(GameDir)\Against the Storm_Data\Managed\UnityEngine.CoreModule.dll</HintPath>
-      <Private>False</Private>
+    <!-- ATS main game assembly -->
+    <Reference Include="Assembly-CSharp">
+      <HintPath>$(StormPath)\Against the Storm_Data\Managed\Assembly-CSharp.dll</HintPath>
     </Reference>
+
+    <!-- Unity assemblies (correct order!) -->
     <Reference Include="UnityEngine">
-      <HintPath>$(GameDir)\Against the Storm_Data\Managed\UnityEngine.dll</HintPath>
-      <Private>False</Private>
+      <HintPath>$(StormPath)\Against the Storm_Data\Managed\UnityEngine.dll</HintPath>
     </Reference>
 
-    <!-- Optional: if your game exposes other managed assemblies you need at compile time, add them here -->
-    <!-- Example: <Reference Include="Assembly-CSharp"> <HintPath>$(GameDir)\Against the Storm_Data\Managed\Assembly-CSharp.dll</HintPath> <Private>False</Private> </Reference> -->
+    <Reference Include="UnityEngine.CoreModule">
+      <HintPath>$(StormPath)\Against the Storm_Data\Managed\UnityEngine.CoreModule.dll</HintPath>
+    </Reference>
+
+    <Reference Include="UnityEngine.InputLegacyModule">
+      <HintPath>$(StormPath)\Against the Storm_Data\Managed\UnityEngine.InputLegacyModule.dll</HintPath>
+    </Reference>
+
+    <Reference Include="UnityEngine.IMGUIModule">
+      <HintPath>$(StormPath)\Against the Storm_Data\Managed\UnityEngine.IMGUIModule.dll</HintPath>
+    </Reference>
+
+    <Reference Include="UnityEngine.UI">
+      <HintPath>$(StormPath)\Against the Storm_Data\Managed\UnityEngine.UI.dll</HintPath>
+    </Reference>
   </ItemGroup>
 
-  <ItemGroup>
-    <!-- Include all C# files in the project folder (default for SDK-style projects) -->
-    <Compile Include="**\*.cs" />
-  </ItemGroup>
+  <!-- Auto‑deploy to BepInEx -->
+  <Target Name="Deploy" AfterTargets="Build">
+    <ItemGroup>
+      <Assembly Include="$(OutputPath)\$(AssemblyName).dll" />
+    </ItemGroup>
 
-  <PropertyGroup>
-    <!-- Prevent copying referenced game DLLs into your plugin output -->
-    <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
-  </PropertyGroup>
-
-  <Target Name="PostBuildCopy" AfterTargets="Build">
-    <!-- Optional: copy the built DLL to a local "deploy" folder for quick testing -->
-    <PropertyGroup>
-      <DeployDir>..\deploy\</DeployDir>
-    </PropertyGroup>
-    <MakeDir Directories="$(DeployDir)" Condition=" '$(DeployDir)' != '' " />
-    <Copy SourceFiles="$(OutputPath)$(AssemblyName).dll" DestinationFolder="$(DeployDir)" SkipUnchangedFiles="true" Condition="Exists('$(OutputPath)$(AssemblyName).dll')" />
+    <Copy SourceFiles="@(Assembly)"
+          DestinationFolder="$(StormPath)\BepInEx\plugins\StockAlert" />
   </Target>
+
 </Project>

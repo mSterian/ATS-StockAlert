@@ -1,208 +1,79 @@
-using System;
-using System.Collections.Generic;
-using System.Globalization;
-using System.Linq;
-using BepInEx.Logging;
 using UnityEngine;
+using System.Linq;
 
 namespace StockAlert
 {
-    internal static class UI
+    public class UI : MonoBehaviour
     {
-        private static Vector2 _savedThresholdsScroll = Vector2.zero;
-        private static string _savedThresholdsEdit = null;
-        private static string _filterText = string.Empty;
-        private static Rect _settingsRect = new Rect(100, 100, 760, 460);
-        private static bool _showSettings;
-        private static bool _centreOnce = true;
-        private static GUIStyle _boxStyle;
-        private static GUIStyle _labelStyle;
+        private Rect _rect = new Rect(200, 100, 500, 600);
+        private string _search = "";
+        private Vector2 _scroll;
 
-        // Expose ordering helper to Discovery
-        public static int GetOrderIndex(string id)
+        private void OnGUI()
         {
-            if (string.IsNullOrEmpty(id)) return int.MaxValue;
-            var idx = ModelsOrder.CustomOrder.IndexOf(id);
-            return idx >= 0 ? idx : int.MaxValue;
+            _rect = GUILayout.Window(GetInstanceID(), _rect, Draw, "StockAlert Configuration");
         }
 
-        public static void ToggleSettings()
+        private void Draw(int id)
         {
-            _showSettings = !_showSettings;
-            if (_showSettings && _centreOnce)
-            {
-                _settingsRect.x = (Screen.width - _settingsRect.width) / 2f;
-                _settingsRect.y = (Screen.height - _settingsRect.height) / 2f;
-                _centreOnce = false;
-            }
-        }
+            GUILayout.Label("Configure thresholds and visibility.", GUILayout.Height(20));
 
-        public static void OnGUI(ManualLogSource logger)
-        {
-            if (!IsInGame() && !_showSettings) return;
-
-            InitStyles();
-
-            if (_showSettings)
-            {
-                _settingsRect = GUI.Window(123456, _settingsRect, id => SettingsWindow(id, logger), "Stock Alert Settings");
-            }
-
-            if (IsInGame())
-            {
-                DrawAlertStrip();
-            }
-        }
-
-        private static void InitStyles()
-        {
-            if (_boxStyle == null)
-            {
-                _boxStyle = new GUIStyle(GUI.skin.box) { padding = new RectOffset(10, 10, 10, 10) };
-            }
-
-            if (_labelStyle == null)
-            {
-                _labelStyle = new GUIStyle(GUI.skin.label) { wordWrap = true };
-            }
-        }
-
-        private static void SettingsWindow(int id, ManualLogSource logger)
-        {
-            if (_savedThresholdsEdit == null)
-            {
-                _savedThresholdsEdit = ConfigManager.SavedThresholds.Value ?? string.Empty;
-            }
-
-            GUILayout.BeginVertical();
-            GUILayout.Label("Saved thresholds (ID:threshold). Edit Name to override display. Use search to filter:", _labelStyle);
-
-            // Filter and controls
             GUILayout.BeginHorizontal();
-            GUILayout.Label("Filter:", GUILayout.Width(40));
-            _filterText = GUILayout.TextField(_filterText, GUILayout.ExpandWidth(true));
-            if (GUILayout.Button("Clear", GUILayout.Width(60))) _filterText = string.Empty;
-            if (GUILayout.Button("Add custom ID", GUILayout.Width(120)))
-            {
-                var newId = "custom_" + Guid.NewGuid().ToString("N").Substring(0, 6);
-                Models.Thresholds.Insert(0, new ThresholdEntry { Id = newId, Name = newId, Threshold = 0f, ThresholdText = "0", NameEdit = newId });
-            }
+            GUILayout.Label("Search:", GUILayout.Width(60));
+            _search = GUILayout.TextField(_search);
             GUILayout.EndHorizontal();
 
-            // Debug / dump buttons
-            GUILayout.BeginHorizontal();
-            if (GUILayout.Button("Debug: Dump first discovered item", GUILayout.Width(300)))
+            GUILayout.Space(10);
+
+            _scroll = GUILayout.BeginScrollView(_scroll);
+
+            var goods = Discovery.Goods;
+
+            if (!string.IsNullOrEmpty(_search))
             {
-                var sample = Discovery.FindFirstEnumerableItem(logger, ConfigManager.VerboseAssemblyDiagnostics.Value);
-                if (sample != null)
-                {
-                    Discovery.DumpItemForDebug(logger, sample, "SampleGood");
-                    var resolved = Discovery.TryResolveNameFromItem(sample);
-                    logger.LogInfo($"[StockAlert] SampleGood resolved name: {resolved ?? "<none>"}");
-                }
-                else
-                {
-                    logger.LogInfo("[StockAlert] Debug: no sample item found by heuristic.");
-                }
+                string s = _search.ToLowerInvariant();
+                goods = goods.Where(g =>
+                    g.DisplayName.ToLowerInvariant().Contains(s) ||
+                    g.Id.ToLowerInvariant().Contains(s)
+                ).ToList();
             }
 
-            if (GUILayout.Button("Dump thresholds to CSV", GUILayout.Width(220))) Dumps.DumpThresholdsToCsv(logger, Models.Thresholds);
-            if (GUILayout.Button("Dump detailed goods to file", GUILayout.Width(220))) Dumps.DumpDetailedGoodsToFile(logger);
-            if (GUILayout.Button("Dump GoodModel instances to file", GUILayout.Width(260))) Dumps.DumpGoodModelInstancesToFile(logger);
-
-            GUILayout.EndHorizontal();
-
-            // Column headers
-            GUILayout.BeginHorizontal();
-            GUILayout.Label("Name (editable)", GUILayout.Width(360));
-            GUILayout.Label("ID (canonical)", GUILayout.Width(200));
-            GUILayout.Label("Threshold", GUILayout.Width(120));
-            GUILayout.EndHorizontal();
-
-            // Scrollable list
-            _savedThresholdsScroll = GUILayout.BeginScrollView(_savedThresholdsScroll, GUILayout.Height(320));
-
-            var filtered = string.IsNullOrEmpty(_filterText)
-                ? Models.Thresholds
-                : Models.Thresholds.Where(t => (t.Id ?? "").IndexOf(_filterText, StringComparison.OrdinalIgnoreCase) >= 0
-                                      || (t.Name ?? "").IndexOf(_filterText, StringComparison.OrdinalIgnoreCase) >= 0).ToList();
-
-            foreach (var entry in filtered.ToList())
-            {
-                GUILayout.BeginHorizontal();
-
-                entry.NameEdit = GUILayout.TextField(entry.NameEdit ?? entry.Name ?? entry.Id, GUILayout.Width(360));
-                GUILayout.Label(Utils.CleanIdForDisplay(entry.Id), GUILayout.Width(200));
-                entry.ThresholdText = GUILayout.TextField(entry.ThresholdText ?? entry.Threshold.ToString(CultureInfo.InvariantCulture), GUILayout.Width(120));
-
-                if (GUILayout.Button("Remove", GUILayout.Width(80)))
-                {
-                    Models.Thresholds.Remove(entry);
-                    if (Models.NameOverrideMap.ContainsKey(entry.Id)) Models.NameOverrideMap.Remove(entry.Id);
-                    break;
-                }
-
-                GUILayout.EndHorizontal();
-            }
+            foreach (var g in goods)
+                DrawGood(g);
 
             GUILayout.EndScrollView();
 
-            // Save / Close
-            GUILayout.BeginHorizontal();
-            if (GUILayout.Button("Save"))
-            {
-                foreach (var e in Models.Thresholds)
-                {
-                    if (float.TryParse(e.ThresholdText, System.Globalization.NumberStyles.Float, CultureInfo.InvariantCulture, out var v))
-                        e.Threshold = v;
-                    else
-                        e.Threshold = 0f;
+            GUILayout.Space(10);
 
-                    var newName = string.IsNullOrWhiteSpace(e.NameEdit) ? e.Id : e.NameEdit.Trim();
-                    if (!string.Equals(newName, e.Name, StringComparison.Ordinal))
-                    {
-                        Models.NameOverrideMap[e.Id] = newName;
-                        e.Name = newName;
-                    }
-                }
+            if (GUILayout.Button("Close", GUILayout.Width(80)))
+                enabled = false;
 
-                Models.SaveThresholdsToConfig();
-                Models.SaveNameOverridesToConfig();
-                logger.LogInfo("[StockAlert] Saved thresholds and name overrides.");
-            }
-
-            if (GUILayout.Button("Close")) _showSettings = false;
-            GUILayout.EndHorizontal();
-
-            GUILayout.EndVertical();
             GUI.DragWindow();
         }
 
-        private static void DrawAlertStrip()
+        private void DrawGood(GoodInfo g)
         {
-            var rect = new Rect(10, 10, 300, 30);
-            GUI.Box(rect, "Stock Alert Active", _boxStyle);
-        }
+            GUILayout.BeginHorizontal();
 
-        private static bool IsInGame()
-        {
-            return Application.isPlaying && !string.IsNullOrEmpty(UnityEngine.SceneManagement.SceneManager.GetActiveScene().name);
-        }
-    }
+            bool newEnabled = GUILayout.Toggle(g.Enabled, "", GUILayout.Width(20));
+            if (newEnabled != g.Enabled)
+            {
+                g.Enabled = newEnabled;
+                ConfigManager.UpdateGoodConfig(g);
+            }
 
-    // small ordering holder so UI and Discovery share the same list
-    internal static class ModelsOrder
-    {
-        public static readonly List<string> CustomOrder = new List<string>
-        {
-            "Mushrooms","Roots","Vegetables","Fish","Meat","Eggs","Insects","Berries",
-            "Jerky","Porridge","Paste","Skewers","Biscuits","Pie","PickledGoods",
-            "Planks","Fabric","Bricks","Pipe","Parts","HearthParts","Fertilizer",
-            "Boots","Coats","Ale","TrainingGear","Incense","Scrolls","TutorialScrolls","Wine","Tea",
-            "Clay","Stone","PlantFibre","Reeds","Algae","Scales","Leather","Grain","Herbs","Resin","Salt","CopperOre","Sparkdew",
-            "Flour","Pottery","Barrels","Waterskin","Pigment","CopperBar","CrystalizedDew",
-            "Amber","PackofProvisions","PackofBuildingMaterials","PackofCrops","PackofLuxuryGoods","PackofTradeGoods","AncientTablet","Fuel Core","_MetaArtifacts","_MetaFoodStockpiles","_MetaMachinery",
-            "Wood","Oil","Sea Marrow","Coal","SimpleTools","BlightFuel","Fuel Rod"
-        };
+            GUILayout.Label(g.DisplayName, GUILayout.Width(200));
+
+            GUILayout.Label("Threshold:", GUILayout.Width(70));
+
+            string t = GUILayout.TextField(g.Threshold.ToString(), GUILayout.Width(60));
+            if (int.TryParse(t, out int newT) && newT >= 0 && newT != g.Threshold)
+            {
+                g.Threshold = newT;
+                ConfigManager.UpdateGoodConfig(g);
+            }
+
+            GUILayout.EndHorizontal();
+        }
     }
 }

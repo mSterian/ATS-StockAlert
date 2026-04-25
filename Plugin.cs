@@ -1,56 +1,81 @@
 using BepInEx;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace StockAlert
 {
-    [BepInPlugin("com.yourname.stockalert", "Stock Alert", "1.0.0")]
+    [BepInPlugin("com.marius.ats.stockalert", "ATS StockAlert", "1.0.0")]
     public class Plugin : BaseUnityPlugin
     {
+        private static Plugin _instance;
+        private HUD _hud;
+        private UI _ui;
+        private bool _initialized = false;
+
+        public static void Log(string msg) => _instance.Logger.LogInfo(msg);
+
         private void Awake()
         {
-            ConfigManager.Init(Config, Logger, out var toggleKey, out var savedThresholds, out var nameOverrides, out var verboseAssemblyDiagnostics);
-            // store config entries in static holders for other modules
-            ConfigManager.ToggleKey = toggleKey;
-            ConfigManager.SavedThresholds = savedThresholds;
-            ConfigManager.NameOverrides = nameOverrides;
-            ConfigManager.VerboseAssemblyDiagnostics = verboseAssemblyDiagnostics;
+            _instance = this;
+            Logger.LogInfo("[StockAlert] Plugin Awake()");
+            SceneManager.sceneLoaded += OnSceneLoaded;
+        }
 
-            Logger.LogInfo("[StockAlert] Awake");
+        private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+        {
+            Log($"[StockAlert] Scene loaded: {scene.name}");
 
-            Diagnostics.LogAssemblies(Logger, ConfigManager.VerboseAssemblyDiagnostics.Value);
+            if (_initialized) return;
 
-            // Load persisted data
-            Models.LoadNameOverridesFromConfig();
-            Models.LoadThresholdsFromConfig();
+            if (scene.name == "Game" || scene.name.Contains("Game"))
+            {
+                Log("[StockAlert] Initializing after game scene load…");
 
-            Logger.LogInfo($"[StockAlert] Loaded {Models.Thresholds.Count} threshold entries and {Models.NameOverrideMap.Count} name overrides.");
+                _initialized = true;
+
+                Discovery.Initialize();
+                CreateHUD();
+                CreateUI();
+            }
+        }
+
+        private void CreateHUD()
+        {
+            Log("[StockAlert] Creating HUD object…");
+
+            var go = new GameObject("StockAlertHUD");
+            _hud = go.AddComponent<HUD>();
+            DontDestroyOnLoad(go);
+
+            Log("[StockAlert] HUD created.");
+        }
+
+        private void CreateUI()
+        {
+            Log("[StockAlert] Creating UI object…");
+
+            var go = new GameObject("StockAlertConfigUI");
+            _ui = go.AddComponent<UI>();
+            _ui.enabled = false;
+            DontDestroyOnLoad(go);
+
+            Log("[StockAlert] UI object created.");
         }
 
         private void Update()
         {
-            try
-            {
-                if (InputHelpers.IsKeyPressed(ConfigManager.ToggleKey.Value))
-                {
-                    UI.ToggleSettings();
-                }
+            if (!_initialized)
+                return;
 
-                // optional hotkey for targeted dump (F9)
-                if (UnityEngine.Input.GetKeyDown(KeyCode.F9))
-                {
-                    Dumps.DumpGoodModelInstancesToFile(Logger);
-                    Logger.LogInfo("[StockAlert] Triggered DumpGoodModelInstancesToFile via F9.");
-                }
-            }
-            catch (System.Exception e)
+            var input = GameAPI.Instance.GetInput();
+            if (input != null && input.GetKeyDown(KeyCode.F8))
             {
-                Logger.LogDebug($"[StockAlert] Input check failed: {e.Message}");
+                _ui.enabled = !_ui.enabled;
+                Log($"[StockAlert] Config UI → {(_ui.enabled ? "ON" : "OFF")}");
             }
-        }
 
-        private void OnGUI()
-        {
-            UI.OnGUI(Logger);
+            if (_hud == null) CreateHUD();
+            if (_ui == null) CreateUI();
         }
     }
 }

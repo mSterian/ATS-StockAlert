@@ -25,13 +25,11 @@ namespace StockAlert.UI.HUD
 
         private sealed class AlertHudBehaviour : MonoBehaviour
         {
-            private const float IconSize = 18f;
+            private const float IconSize = 22.5f;
             private const float RowHeight = 24f;
             private const float BoxMargin = 16f;
             private const float BoxPaddingX = 20f;
-            private const float BoxPaddingY = 16f;
-            private const float HeaderHeight = 20f;
-            private const float HeaderGap = 8f;
+            private const float HeaderGap = 4f;
 
             private GUIStyle _lineStyle;
             private GUIStyle _headerStyle;
@@ -56,8 +54,12 @@ namespace StockAlert.UI.HUD
                 var contentWidth = GetContentWidth(belowThreshold);
                 var boxWidth = Mathf.Min(contentWidth + BoxPaddingX, Screen.width - BoxMargin * 2f);
                 var contentHeight = belowThreshold.Count * RowHeight;
-                var visibleContentHeight = Mathf.Min(contentHeight, Screen.height - 120f);
-                var visibleHeight = HeaderHeight + HeaderGap + visibleContentHeight + BoxPaddingY;
+                var maxVisibleContentHeight = Screen.height - 120f;
+                var needsScroll = contentHeight > maxVisibleContentHeight;
+                var visibleContentHeight = needsScroll ? maxVisibleContentHeight : contentHeight;
+                var headerHeight = _headerStyle.CalcHeight(new GUIContent("Low Stock Alerts"), boxWidth);
+                var verticalPadding = _boxStyle.padding.top + _boxStyle.padding.bottom;
+                var visibleHeight = headerHeight + HeaderGap + visibleContentHeight + verticalPadding;
                 var rect = new Rect(Screen.width - boxWidth - BoxMargin, Screen.height - visibleHeight - BoxMargin, boxWidth, visibleHeight);
                 GUI.color = new Color(1f, 0.9f, 0.9f, 0.96f);
                 GUILayout.BeginArea(rect, _boxStyle);
@@ -66,12 +68,22 @@ namespace StockAlert.UI.HUD
                 GUILayout.Label("Low Stock Alerts", _headerStyle);
                 GUILayout.Space(4f);
 
-                _scrollPosition = GUILayout.BeginScrollView(_scrollPosition, false, contentHeight > visibleContentHeight);
-                foreach (var good in belowThreshold)
+                if (needsScroll)
                 {
-                    DrawAlertLine(good);
+                    _scrollPosition = GUILayout.BeginScrollView(_scrollPosition, false, true, GUILayout.Height(visibleContentHeight));
+                    foreach (var good in belowThreshold)
+                    {
+                        DrawAlertLine(good);
+                    }
+                    GUILayout.EndScrollView();
                 }
-                GUILayout.EndScrollView();
+                else
+                {
+                    foreach (var good in belowThreshold)
+                    {
+                        DrawAlertLine(good);
+                    }
+                }
 
                 GUILayout.EndArea();
             }
@@ -80,12 +92,12 @@ namespace StockAlert.UI.HUD
             {
                 _lineStyle ??= new GUIStyle(GUI.skin.label)
                 {
-                    fontSize = 13
+                    fontSize = 16
                 };
 
                 _headerStyle ??= new GUIStyle(GUI.skin.label)
                 {
-                    fontSize = 13
+                    fontSize = 16
                 };
 
                 _boxStyle ??= new GUIStyle(GUI.skin.box)
@@ -114,7 +126,7 @@ namespace StockAlert.UI.HUD
 
             private void DrawAlertLine(Core.Models.GoodInfo good)
             {
-                GUILayout.BeginHorizontal();
+                GUILayout.BeginHorizontal(GUILayout.Height(RowHeight));
 
                 if (good.Icon != null && good.Icon.texture != null)
                 {

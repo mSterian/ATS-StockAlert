@@ -1,7 +1,10 @@
 using BepInEx;
 using UnityEngine;
+using StockAlert.Game.Discovery;
+using StockAlert.UI.HUD;
+using StockAlert.UI.Panels;
 
-namespace StockAlert.Core.Models
+namespace StockAlert.Infrastructure.Plugin
 {
     [BepInPlugin("StockAlert", "Stock Alert", "1.0.0")]
     public class Plugin : BaseUnityPlugin

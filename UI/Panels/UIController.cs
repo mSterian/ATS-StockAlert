@@ -1,6 +1,9 @@
 using UnityEngine;
+using StockAlert.Infrastructure.Plugin;
+using StockAlert.UI.HUD;
+using StockAlert.UI.Panels;
 
-namespace StockAlert.Core.Models
+namespace StockAlert.UI.Panels
 {
     public static class UI
     {

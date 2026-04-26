@@ -3,8 +3,12 @@ using UnityEngine.SceneManagement;
 using System.Collections;
 using System.Reflection;
 using Eremite;
+using StockAlert.Infrastructure.Plugin;
+using StockAlert.Game;
+using StockAlert.Game.Discovery;
+using StockAlert.Game.Hooks;
 
-namespace StockAlert.Core.Models
+namespace StockAlert.Game.Hooks
 {
     internal class StockAlertGameReadyHook : MonoBehaviour
     {

@@ -1,8 +1,11 @@
 using UnityEngine;
 using Eremite;
 using System.Reflection;
+using StockAlert.Game;
+using StockAlert.Game.Discovery;
+using StockAlert.Game.Hooks;
 
-namespace StockAlert.Core.Models
+namespace StockAlert.Game
 {
     public static class GameAPI
     {

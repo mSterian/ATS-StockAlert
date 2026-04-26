@@ -2,8 +2,11 @@ using System.Collections.Generic;
 using System.Reflection;
 using Eremite.Model;
 using Eremite.Services;
+using StockAlert.Game;
+using StockAlert.Game.Discovery;
+using StockAlert.Game.Hooks;
 
-namespace StockAlert.Core.Models
+namespace StockAlert.Game.Discovery
 {
     public static class Discovery
     {

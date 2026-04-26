@@ -1,8 +1,9 @@
 using System.Collections.Generic;
 using BepInEx;
 using BepInEx.Configuration;
+using StockAlert.Core.Models;
 
-namespace StockAlert.Core.Models
+namespace StockAlert.Config
 {
     public static class ConfigManager
     {

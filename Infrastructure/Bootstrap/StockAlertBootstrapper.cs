@@ -3,8 +3,11 @@ using UnityEngine.SceneManagement;
 using System.Collections;
 using System.Reflection;
 using Eremite;
+using StockAlert.Infrastructure.Plugin;
+using StockAlert.Game;
+using StockAlert.UI.HUD;
 
-namespace StockAlert.Core.Models
+namespace StockAlert.Infrastructure.Bootstrap
 {
     internal class StockAlertBootstrapper : MonoBehaviour
     {

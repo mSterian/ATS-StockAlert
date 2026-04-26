@@ -27,6 +27,11 @@ namespace StockAlert.UI.Panels
             _panel = _uiRoot.AddComponent<SettingsPanelBehaviour>();
         }
 
+        public static void Refresh()
+        {
+            _panel?.RefreshInputs();
+        }
+
         public static void Toggle()
         {
             if (_panel == null)
@@ -70,7 +75,7 @@ namespace StockAlert.UI.Panels
             {
                 GUILayout.BeginVertical();
                 GUILayout.Label("Toggle key: " + ConfigManager.ToggleSettingsKey);
-                GUILayout.Label("Set a threshold. 0 disables alerts for that good.");
+                GUILayout.Label("Thresholds mirror the game's production limits.");
                 GUILayout.Space(8f);
 
                 if (Discovery.Goods.Count == 0)
@@ -107,38 +112,19 @@ namespace StockAlert.UI.Panels
 
                 GUILayout.Label(good.DisplayName, GUILayout.Width(220f));
                 GUILayout.Label("Stock: " + good.CurrentAmount, GUILayout.Width(90f));
-                GUILayout.Label("Threshold", GUILayout.Width(60f));
-
-                var nextInput = GUILayout.TextField(currentInput, GUILayout.Width(70f));
-                if (nextInput != currentInput)
-                {
-                    _thresholdInputs[good.Id] = nextInput;
-                }
-
-                if (GUILayout.Button("Save", GUILayout.Width(60f)))
-                {
-                    ApplyThreshold(good);
-                }
+                GUILayout.Label("Limit", GUILayout.Width(35f));
+                GUILayout.Label(currentInput, GUILayout.Width(70f));
 
                 GUILayout.EndHorizontal();
             }
 
-            private void ApplyThreshold(GoodInfo good)
+            public void RefreshInputs()
             {
-                if (!_thresholdInputs.TryGetValue(good.Id, out var text))
+                _thresholdInputs.Clear();
+                foreach (var good in Discovery.Goods)
                 {
-                    text = good.Threshold.ToString();
+                    _thresholdInputs[good.Id] = good.Threshold.ToString();
                 }
-
-                if (!int.TryParse(text, out var threshold))
-                {
-                    threshold = good.Threshold;
-                }
-
-                good.Threshold = Mathf.Max(0, threshold);
-                good.Enabled = good.Threshold > 0;
-                _thresholdInputs[good.Id] = good.Threshold.ToString();
-                ConfigManager.UpdateGoodConfig(good);
             }
         }
     }

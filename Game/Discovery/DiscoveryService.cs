@@ -54,6 +54,7 @@ namespace StockAlert.Game.Discovery
             }
 
             Goods.Sort((left, right) => string.Compare(left.DisplayName, right.DisplayName, StringComparison.OrdinalIgnoreCase));
+            ConfigManager.RefreshGoodsFromProductionLimits(Goods);
             UpdateStock();
 
             Plugin.Log($"Discovery.Initialize(): Loaded {Goods.Count} goods");

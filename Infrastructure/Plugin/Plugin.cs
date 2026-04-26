@@ -51,6 +51,7 @@ namespace StockAlert.Infrastructure.Plugin
             Discovery.Initialize();
             HUD.Initialize();
             PanelUI.Initialize();
+            PanelUI.Refresh();
             StockAlertRuntime.Initialize();
         }
     }

@@ -24,9 +24,9 @@ namespace StockAlert.Game.Hooks
             Plugin.Log($"Scene loaded: {scene.name}");
 
             // Only initialize in the REAL gameplay scene
-            if (scene.name != "Game")
+            if (scene.name != "Game" && scene.name != "Gameplay")
             {
-                Plugin.Log("Not the gameplay scene, ignoring.");
+                Plugin.Log("Not gameplay scene, ignoring: " + scene.name);
                 return;
             }
 

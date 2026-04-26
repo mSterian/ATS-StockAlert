@@ -25,7 +25,7 @@ namespace StockAlert.Game.Hooks
         {
             Plugin.Log($"OnSceneLoaded called on ID={GetInstanceID()} for scene {scene.name}");
 
-            if (scene.name != "Game")
+            if (scene.name != "Game" && scene.name != "Gameplay")
                 return;
 
             Plugin.Log("Gameplay scene detected, searching for GameMB...");

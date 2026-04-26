@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using BepInEx;
 using BepInEx.Configuration;
 using StockAlert.Core.Models;
+using StockAlert.Infrastructure.Plugin;
 using UnityEngine;
 
 namespace StockAlert.Config
@@ -10,9 +11,6 @@ namespace StockAlert.Config
     {
         private static ConfigFile _config;
         private static ConfigEntry<KeyboardShortcut> _toggleSettingsKey;
-
-        private static readonly Dictionary<string, ConfigEntry<bool>> _enabled = new();
-        private static readonly Dictionary<string, ConfigEntry<int>> _thresholds = new();
 
         public static void Load()
         {
@@ -42,36 +40,33 @@ namespace StockAlert.Config
         public static void EnsureGoodConfig(GoodInfo g)
         {
             Load();
-
-            var section = $"Good.{g.ConfigKey}";
-
-            if (!_enabled.ContainsKey(g.ConfigKey))
-            {
-                _enabled[g.ConfigKey] = _config.Bind(
-                    section, "Enabled", false,
-                    $"Show {g.DisplayName} in HUD"
-                );
-            }
-
-            if (!_thresholds.ContainsKey(g.ConfigKey))
-            {
-                _thresholds[g.ConfigKey] = _config.Bind(
-                    section, "Threshold", 0,
-                    $"Threshold for {g.DisplayName}"
-                );
-            }
-
-            g.Threshold = _thresholds[g.ConfigKey].Value;
-            g.Enabled = _enabled[g.ConfigKey].Value && g.Threshold > 0;
+            ApplyProductionLimit(g);
         }
 
-        public static void UpdateGoodConfig(GoodInfo g)
+        public static void RefreshGoodsFromProductionLimits(IEnumerable<GoodInfo> goods)
         {
-            Load();
+            foreach (var good in goods)
+            {
+                ApplyProductionLimit(good);
+            }
+        }
+
+        public static void RefreshGoodFromProductionLimit(GoodInfo good)
+        {
+            ApplyProductionLimit(good);
+        }
+
+        private static void ApplyProductionLimit(GoodInfo g)
+        {
+            var previous = g.Threshold;
+            var threshold = Game.GameAPI.GetProductionLimit(g.Model, g.Id);
+            g.Threshold = Mathf.Max(0, threshold);
             g.Enabled = g.Threshold > 0;
-            _enabled[g.ConfigKey].Value = g.Enabled;
-            _thresholds[g.ConfigKey].Value = g.Threshold;
-            _config.Save();
+
+            if (previous != g.Threshold)
+            {
+                Plugin.Log($"Synced threshold for {g.Id} => {g.Threshold}");
+            }
         }
     }
 }

@@ -43,20 +43,23 @@ namespace StockAlert.Config
             ApplyProductionLimit(g);
         }
 
-        public static void RefreshGoodsFromProductionLimits(IEnumerable<GoodInfo> goods)
+        public static bool RefreshGoodsFromProductionLimits(IEnumerable<GoodInfo> goods)
         {
+            var changed = false;
             foreach (var good in goods)
             {
-                ApplyProductionLimit(good);
+                changed |= ApplyProductionLimit(good);
             }
+
+            return changed;
         }
 
-        public static void RefreshGoodFromProductionLimit(GoodInfo good)
+        public static bool RefreshGoodFromProductionLimit(GoodInfo good)
         {
-            ApplyProductionLimit(good);
+            return ApplyProductionLimit(good);
         }
 
-        private static void ApplyProductionLimit(GoodInfo g)
+        private static bool ApplyProductionLimit(GoodInfo g)
         {
             var previous = g.Threshold;
             var threshold = Game.GameAPI.GetProductionLimit(g.Model, g.Id);
@@ -66,7 +69,10 @@ namespace StockAlert.Config
             if (previous != g.Threshold)
             {
                 Plugin.Log($"Synced threshold for {g.Id} => {g.Threshold}");
+                return true;
             }
+
+            return false;
         }
     }
 }

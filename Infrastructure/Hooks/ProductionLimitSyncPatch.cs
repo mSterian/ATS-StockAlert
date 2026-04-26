@@ -31,8 +31,10 @@ namespace StockAlert.Infrastructure.Hooks
     {
         public static void SyncThresholds()
         {
-            ConfigManager.RefreshGoodsFromProductionLimits(Discovery.Goods);
-            PanelUI.Refresh();
+            if (ConfigManager.RefreshGoodsFromProductionLimits(Discovery.Goods))
+            {
+                PanelUI.Refresh();
+            }
         }
     }
 }

@@ -8,17 +8,15 @@ namespace StockAlert
     {
         public static Plugin Instance;
 
-        static Plugin()
-        {
-            var go = new GameObject("StockAlertBootstrapper");
-            Object.DontDestroyOnLoad(go);
-            go.AddComponent<StockAlertBootstrapper>();
-        }
-
         private void Awake()
         {
             Instance = this;
             Log("StockAlert loaded");
+
+            // Create bootstrapper here, after the plugin is initialized
+            var go = new GameObject("StockAlertBootstrapper");
+            Object.DontDestroyOnLoad(go);
+            go.AddComponent<StockAlertBootstrapper>();
         }
 
         public static void Log(string msg)

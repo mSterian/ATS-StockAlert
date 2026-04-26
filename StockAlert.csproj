@@ -22,6 +22,9 @@
     <Reference Include="Assembly-CSharp">
       <HintPath>$(StormPath)\Against the Storm_Data\Managed\Assembly-CSharp.dll</HintPath>
     </Reference>
+    <Reference Include="Sirenix.Serialization">
+      <HintPath>$(StormPath)\Against the Storm_Data\Managed\Sirenix.Serialization.dll</HintPath>
+    </Reference>
 
     <!-- Unity assemblies (correct order!) -->
     <Reference Include="UnityEngine">

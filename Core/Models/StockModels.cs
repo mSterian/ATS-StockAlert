@@ -1,3 +1,4 @@
+using Eremite.Model;
 using UnityEngine;
 
 namespace StockAlert.Core.Models
@@ -7,7 +8,9 @@ namespace StockAlert.Core.Models
     /// </summary>
     public class GoodInfo
     {
+        public GoodModel Model;       // Backing game model
         public string Id;              // Internal game ID
+        public string ConfigKey;       // Safe key for BepInEx config sections
         public string DisplayName;     // Localized name
         public Sprite Icon;            // Icon from GoodModel
         public int CurrentAmount;      // Updated every frame

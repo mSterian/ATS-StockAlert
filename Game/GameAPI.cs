@@ -1,54 +1,63 @@
-using UnityEngine;
 using Eremite;
+using Eremite.Model;
+using System;
 using System.Reflection;
-using StockAlert.Game;
-using StockAlert.Game.Discovery;
-using StockAlert.Game.Hooks;
 
 namespace StockAlert.Game
 {
     public static class GameAPI
     {
-        private static GameMB _game;
+        private static PropertyInfo _piMbSettings;
+        private static PropertyInfo _piStorageService;
+        private static MethodInfo _miGetAmount;
 
-        private static FieldInfo _fiGameServices;
-        private static FieldInfo _fiSettings;
-        private static FieldInfo _fiStorage;
-
-        private static void EnsureRefs()
+        public static Settings GetSettings()
         {
-            if (_game == null)
-                _game = Object.FindObjectOfType<GameMB>();
+            if (_piMbSettings == null)
+            {
+                _piMbSettings = typeof(MB).GetProperty("Settings", BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
+            }
 
-            if (_game == null)
-                return;
-
-            if (_fiGameServices == null)
-                _fiGameServices = typeof(GameMB).GetField("GameServices", BindingFlags.NonPublic | BindingFlags.Instance);
-
-            if (_fiSettings == null)
-                _fiSettings = typeof(GameMB).GetField("Settings", BindingFlags.NonPublic | BindingFlags.Instance);
-
-            if (_fiStorage == null)
-                _fiStorage = typeof(GameMB).GetField("StorageService", BindingFlags.NonPublic | BindingFlags.Instance);
+            return _piMbSettings?.GetValue(null, null) as Settings;
         }
 
-        public static Eremite.Services.IGameServices GetGameServices()
+        public static int GetStoredAmount(GoodModel model, string fallbackId)
         {
-            EnsureRefs();
-            return _fiGameServices?.GetValue(_game) as Eremite.Services.IGameServices;
-        }
+            if (model == null && string.IsNullOrWhiteSpace(fallbackId))
+            {
+                return 0;
+            }
 
-        public static Eremite.Model.Settings GetSettings()
-        {
-            EnsureRefs();
-            return _fiSettings?.GetValue(_game) as Eremite.Model.Settings;
-        }
+            try
+            {
+                if (_piStorageService == null)
+                {
+                    _piStorageService = typeof(GameMB).GetProperty("StorageService", BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
+                }
 
-        public static Eremite.Services.IStorageService GetStorage()
-        {
-            EnsureRefs();
-            return _fiStorage?.GetValue(_game) as Eremite.Services.IStorageService;
+                var storage = _piStorageService?.GetValue(null, null);
+                if (storage == null)
+                {
+                    return 0;
+                }
+
+                if (_miGetAmount == null)
+                {
+                    _miGetAmount = storage.GetType().GetMethod("GetAmount", new[] { typeof(string) });
+                }
+
+                if (_miGetAmount == null)
+                {
+                    return 0;
+                }
+
+                var goodName = model != null ? model.Name : fallbackId;
+                return (int)_miGetAmount.Invoke(storage, new object[] { goodName });
+            }
+            catch (Exception)
+            {
+                return 0;
+            }
         }
     }
 }

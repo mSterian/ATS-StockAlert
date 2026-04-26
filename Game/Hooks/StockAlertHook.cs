@@ -3,10 +3,10 @@ using UnityEngine.SceneManagement;
 using System.Collections;
 using System.Reflection;
 using Eremite;
-using StockAlert.Infrastructure.Plugin;
 using StockAlert.Game;
 using StockAlert.Game.Discovery;
 using StockAlert.Game.Hooks;
+using StockAlert.Infrastructure.Plugin;
 
 namespace StockAlert.Game.Hooks
 {

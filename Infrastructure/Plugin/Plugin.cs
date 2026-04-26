@@ -1,8 +1,10 @@
 using BepInEx;
-using UnityEngine;
+using HarmonyLib;
+using StockAlert.Config;
 using StockAlert.Game.Discovery;
+using StockAlert.Infrastructure.Bootstrap;
 using StockAlert.UI.HUD;
-using StockAlert.UI.Panels;
+using PanelUI = StockAlert.UI.Panels.UI;
 
 namespace StockAlert.Infrastructure.Plugin
 {
@@ -11,29 +13,45 @@ namespace StockAlert.Infrastructure.Plugin
     {
         public static Plugin Instance;
 
+        private Harmony _harmony;
+        private bool _gameReadyInitialized;
+
         private void Awake()
         {
             Instance = this;
             Log("StockAlert loaded");
+            ConfigManager.Load();
 
-            // Create bootstrapper here, after the plugin is initialized
-            var go = new GameObject("StockAlertBootstrapper");
-            Object.DontDestroyOnLoad(go);
-            go.AddComponent<StockAlertBootstrapper>();
+            _harmony = new Harmony("StockAlert.Harmony");
+            _harmony.PatchAll();
+            Log("Harmony patches applied");
+        }
+
+        private void OnDestroy()
+        {
+            _harmony?.UnpatchSelf();
         }
 
         public static void Log(string msg)
         {
-            BepInEx.Logging.Logger.CreateLogSource("Stock Alert").LogInfo(msg);
+            BepInEx.Logging.Logger.CreateLogSource("Stock Alert")
+                .LogInfo(msg);
         }
 
         public void OnGameReady()
         {
-            Log("OnGameReady() fired — initializing mod");
+            if (_gameReadyInitialized)
+            {
+                Log("OnGameReady() skipped - already initialized");
+                return;
+            }
 
+            _gameReadyInitialized = true;
+            Log("OnGameReady() fired - initializing mod");
             Discovery.Initialize();
-            UI.Initialize();
             HUD.Initialize();
+            PanelUI.Initialize();
+            StockAlertRuntime.Initialize();
         }
     }
 }

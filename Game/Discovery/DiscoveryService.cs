@@ -1,16 +1,16 @@
+using System;
 using System.Collections.Generic;
-using System.Reflection;
+using System.Text;
 using Eremite.Model;
-using Eremite.Services;
-using StockAlert.Game;
-using StockAlert.Game.Discovery;
-using StockAlert.Game.Hooks;
+using StockAlert.Config;
+using StockAlert.Core.Models;
+using StockAlert.Infrastructure.Plugin;
 
 namespace StockAlert.Game.Discovery
 {
     public static class Discovery
     {
-        public static List<Good> Goods = new List<Good>();
+        public static List<GoodInfo> Goods { get; } = new List<GoodInfo>();
 
         public static void Initialize()
         {
@@ -18,63 +18,106 @@ namespace StockAlert.Game.Discovery
 
             Goods.Clear();
 
-            var services = GameAPI.GetGameServices();
-            if (services == null)
+            var settings = GameAPI.GetSettings();
+            if (settings == null)
             {
-                Plugin.Log("Discovery.Initialize(): GameServices is null");
+                Plugin.Log("Discovery.Initialize(): Settings is null");
                 return;
             }
 
-            // Find GoodsService via reflection
-            GoodsService goodsService = null;
-
-            var serviceFields = services.GetType().GetFields(
-                BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance);
-
-            foreach (var f in serviceFields)
+            var goods = settings.Goods;
+            if (goods == null || goods.Length == 0)
             {
-                if (typeof(GoodsService).IsAssignableFrom(f.FieldType))
+                Plugin.Log("Discovery.Initialize(): No goods found in Settings");
+                return;
+            }
+
+            foreach (var model in goods)
+            {
+                if (model == null)
                 {
-                    goodsService = (GoodsService)f.GetValue(services);
-                    break;
+                    continue;
                 }
-            }
 
-            if (goodsService == null)
-            {
-                Plugin.Log("Discovery.Initialize(): Could not find GoodsService");
-                return;
-            }
-
-            // Now reflect the private list of goods inside GoodsService
-            List<Good> internalGoods = null;
-
-            var goodsFields = goodsService.GetType().GetFields(
-                BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance);
-
-            foreach (var f in goodsFields)
-            {
-                if (typeof(List<Good>).IsAssignableFrom(f.FieldType))
+                var good = new GoodInfo
                 {
-                    internalGoods = (List<Good>)f.GetValue(goodsService);
-                    break;
-                }
+                    Model = model,
+                    Id = model.Name,
+                    ConfigKey = BuildConfigKey(model.Name),
+                    DisplayName = ResolveDisplayName(model),
+                    Icon = model.icon,
+                    CurrentAmount = 0
+                };
+
+                ConfigManager.EnsureGoodConfig(good);
+                Goods.Add(good);
             }
 
-            if (internalGoods == null)
-            {
-                Plugin.Log("Discovery.Initialize(): Could not find internal goods list");
-                return;
-            }
-
-            Goods.AddRange(internalGoods);
+            Goods.Sort((left, right) => string.Compare(left.DisplayName, right.DisplayName, StringComparison.OrdinalIgnoreCase));
+            UpdateStock();
 
             Plugin.Log($"Discovery.Initialize(): Loaded {Goods.Count} goods");
         }
 
+        private static string ResolveDisplayName(GoodModel model)
+        {
+            var localized = model.displayName?.ToString();
+            if (!string.IsNullOrWhiteSpace(localized) &&
+                localized.IndexOf("Missing key", StringComparison.OrdinalIgnoreCase) < 0)
+            {
+                return localized;
+            }
+
+            if (!string.IsNullOrWhiteSpace(model.Name))
+            {
+                return model.Name;
+            }
+
+            return "Unknown Good";
+        }
+
+        private static string BuildConfigKey(string rawId)
+        {
+            if (string.IsNullOrWhiteSpace(rawId))
+            {
+                return "UnknownGood";
+            }
+
+            var builder = new StringBuilder(rawId.Length);
+            foreach (var ch in rawId)
+            {
+                switch (ch)
+                {
+                    case '=':
+                    case '\n':
+                    case '\t':
+                    case '\\':
+                    case '"':
+                    case '\'':
+                    case '[':
+                    case ']':
+                        builder.Append('_');
+                        break;
+                    default:
+                        builder.Append(ch);
+                        break;
+                }
+            }
+
+            return builder.ToString();
+        }
+
         public static void UpdateStock()
         {
-            // Stock update logic will go here later
+            foreach (var good in Goods)
+            {
+                if (good.Model == null)
+                {
+                    continue;
+                }
+
+                good.CurrentAmount = GameAPI.GetStoredAmount(good.Model, good.Id);
+            }
         }
     }
 }

@@ -4,13 +4,13 @@ using System.Collections;
 using System.Reflection;
 using Eremite;
 
-namespace StockAlert
+namespace StockAlert.Core.Models
 {
-    internal class StockAlertBootstrapper : MonoBehaviour
+    internal class StockAlertGameReadyHook : MonoBehaviour
     {
         private void Awake()
         {
-            Plugin.Log("StockAlertBootstrapper created, persistent, ID=" + GetInstanceID());
+            Plugin.Log("StockAlertGameReadyHook created, persistent, ID=" + GetInstanceID());
             DontDestroyOnLoad(this.gameObject);
 
             SceneManager.sceneLoaded += OnSceneLoaded;
@@ -36,6 +36,8 @@ namespace StockAlert
                     return;
                 }
             }
+
+            Plugin.Log("Gameplay scene loaded but GameMB not found yet.");
         }
 
         private IEnumerator WaitForGameServices(GameMB game)

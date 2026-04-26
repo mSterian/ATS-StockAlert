@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using BepInEx;
 using BepInEx.Configuration;
 
-namespace StockAlert
+namespace StockAlert.Core.Models
 {
     public static class ConfigManager
     {

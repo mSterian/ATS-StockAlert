@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace StockAlert
+namespace StockAlert.Core.Models
 {
     /// <summary>
     /// Full information about a good, used by UI, HUD, and Discovery.

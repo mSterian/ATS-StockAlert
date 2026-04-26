@@ -2,7 +2,7 @@ using UnityEngine;
 using Eremite;
 using System.Reflection;
 
-namespace StockAlert
+namespace StockAlert.Core.Models
 {
     public static class GameAPI
     {

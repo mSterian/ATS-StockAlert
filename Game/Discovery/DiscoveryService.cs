@@ -3,7 +3,7 @@ using System.Reflection;
 using Eremite.Model;
 using Eremite.Services;
 
-namespace StockAlert
+namespace StockAlert.Core.Models
 {
     public static class Discovery
     {

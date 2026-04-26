@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace StockAlert
+namespace StockAlert.Core.Models
 {
     public static class UI
     {

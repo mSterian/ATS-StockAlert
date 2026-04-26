@@ -1,7 +1,7 @@
 using BepInEx;
 using UnityEngine;
 
-namespace StockAlert
+namespace StockAlert.Core.Models
 {
     [BepInPlugin("StockAlert", "Stock Alert", "1.0.0")]
     public class Plugin : BaseUnityPlugin

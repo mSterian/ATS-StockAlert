@@ -4,25 +4,27 @@ using System.Collections;
 using System.Reflection;
 using Eremite;
 
-namespace StockAlert
+namespace StockAlert.Core.Models
 {
-    internal class StockAlertGameReadyHook : MonoBehaviour
+    public class GameReadyHook : MonoBehaviour
     {
         private void Awake()
         {
-            Plugin.Log("StockAlertGameReadyHook created, persistent, ID=" + GetInstanceID());
+            Plugin.Log("GameReadyHook created, persistent, ID=" + GetInstanceID());
             DontDestroyOnLoad(this.gameObject);
-
             SceneManager.sceneLoaded += OnSceneLoaded;
-            Plugin.Log("Subscribed to sceneLoaded event");
         }
 
         private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
         {
-            Plugin.Log($"OnSceneLoaded called on ID={GetInstanceID()} for scene {scene.name}");
+            Plugin.Log($"Scene loaded: {scene.name}");
 
+            // Only initialize in the REAL gameplay scene
             if (scene.name != "Game")
+            {
+                Plugin.Log("Not the gameplay scene, ignoring.");
                 return;
+            }
 
             Plugin.Log("Gameplay scene detected, searching for GameMB...");
 
@@ -54,6 +56,7 @@ namespace StockAlert
             }
 
             Plugin.Log("GameServices READY — firing callback!");
+
             Plugin.Instance.OnGameReady();
         }
     }

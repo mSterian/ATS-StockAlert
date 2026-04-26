@@ -2,16 +2,18 @@ using UnityEngine;
 
 namespace StockAlert
 {
+    /// <summary>
+    /// Full information about a good, used by UI, HUD, and Discovery.
+    /// </summary>
     public class GoodInfo
     {
-        public string Id;
-        public string DisplayName;
-        public Texture2D Icon;
-        public int CurrentAmount;
-        public int Threshold;
-        public bool Enabled;
+        public string Id;              // Internal game ID
+        public string DisplayName;     // Localized name
+        public Sprite Icon;            // Icon from GoodModel
+        public int CurrentAmount;      // Updated every frame
+        public int Threshold;          // User-defined threshold
+        public bool Enabled;           // Whether alerts are active
 
-        public bool IsBelowThreshold =>
-            Enabled && Threshold > 0 && CurrentAmount < Threshold;
+        public bool IsBelowThreshold => Enabled && CurrentAmount < Threshold;
     }
 }

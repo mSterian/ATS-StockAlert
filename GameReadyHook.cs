@@ -1,0 +1,63 @@
+using UnityEngine;
+using UnityEngine.SceneManagement;
+using System.Collections;
+using System.Reflection;
+using Eremite;
+
+namespace StockAlert
+{
+    public class GameReadyHook : MonoBehaviour
+    {
+        private void Awake()
+        {
+            Plugin.Log("GameReadyHook created, persistent, ID=" + GetInstanceID());
+            DontDestroyOnLoad(this.gameObject);
+            SceneManager.sceneLoaded += OnSceneLoaded;
+        }
+
+        private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+        {
+            Plugin.Log($"Scene loaded: {scene.name}");
+
+            // Only initialize in the REAL gameplay scene
+            if (scene.name != "Game")
+            {
+                Plugin.Log("Not the gameplay scene, ignoring.");
+                return;
+            }
+
+            Plugin.Log("Gameplay scene detected, searching for GameMB...");
+
+            foreach (var root in scene.GetRootGameObjects())
+            {
+                var game = root.GetComponentInChildren<GameMB>();
+                if (game != null)
+                {
+                    Plugin.Log("Found REAL GameMB in gameplay scene");
+                    StartCoroutine(WaitForGameServices(game));
+                    return;
+                }
+            }
+
+            Plugin.Log("Gameplay scene loaded but GameMB not found yet.");
+        }
+
+        private IEnumerator WaitForGameServices(GameMB game)
+        {
+            Plugin.Log("Waiting for GameServices...");
+
+            var fi = typeof(GameMB).GetField("GameServices",
+                BindingFlags.NonPublic | BindingFlags.Instance);
+
+            while (fi.GetValue(game) == null)
+            {
+                Plugin.Log("GameServices still null...");
+                yield return new WaitForSeconds(0.5f);
+            }
+
+            Plugin.Log("GameServices READY — firing callback!");
+
+            Plugin.Instance.OnGameReady();
+        }
+    }
+}

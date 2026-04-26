@@ -1,81 +1,77 @@
 using System.Collections.Generic;
-using System.Linq;
-using UnityEngine;
-using Eremite;
+using System.Reflection;
+using Eremite.Model;
+using Eremite.Services;
 
 namespace StockAlert
 {
     public static class Discovery
     {
-        private static readonly List<GoodInfo> _goods = new();
-        private static bool _loaded = false;
-
-        public static IReadOnlyList<GoodInfo> Goods => _goods;
+        public static List<Good> Goods = new List<Good>();
 
         public static void Initialize()
         {
-            new GameObject("StockAlertGameReadyHook")
-                .AddComponent<GameReadyHook>()
-                .Init(LoadGoods);
-        }
+            Plugin.Log("Discovery.Initialize()");
 
-        private static void LoadGoods()
-        {
-            if (_loaded) return;
-            _loaded = true;
+            Goods.Clear();
 
-            var settings = GameAPI.Instance.GetSettings();
-
-            foreach (var gm in settings.Goods)
+            var services = GameAPI.GetGameServices();
+            if (services == null)
             {
-                if (ReferenceEquals(gm, null)) continue;
-
-                var info = new GoodInfo
-                {
-                    Id = gm.Name,
-                    DisplayName = gm.displayName?.Text ?? gm.Name,
-                    Icon = Utils.SpriteToTexture(gm.icon),
-                    CurrentAmount = 0
-                };
-
-                ConfigManager.EnsureGoodConfig(info);
-                _goods.Add(info);
+                Plugin.Log("Discovery.Initialize(): GameServices is null");
+                return;
             }
+
+            // Find GoodsService via reflection
+            GoodsService goodsService = null;
+
+            var serviceFields = services.GetType().GetFields(
+                BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance);
+
+            foreach (var f in serviceFields)
+            {
+                if (typeof(GoodsService).IsAssignableFrom(f.FieldType))
+                {
+                    goodsService = (GoodsService)f.GetValue(services);
+                    break;
+                }
+            }
+
+            if (goodsService == null)
+            {
+                Plugin.Log("Discovery.Initialize(): Could not find GoodsService");
+                return;
+            }
+
+            // Now reflect the private list of goods inside GoodsService
+            List<Good> internalGoods = null;
+
+            var goodsFields = goodsService.GetType().GetFields(
+                BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance);
+
+            foreach (var f in goodsFields)
+            {
+                if (typeof(List<Good>).IsAssignableFrom(f.FieldType))
+                {
+                    internalGoods = (List<Good>)f.GetValue(goodsService);
+                    break;
+                }
+            }
+
+            if (internalGoods == null)
+            {
+                Plugin.Log("Discovery.Initialize(): Could not find internal goods list");
+                return;
+            }
+
+            Goods.AddRange(internalGoods);
+
+            Plugin.Log($"Discovery.Initialize(): Loaded {Goods.Count} goods");
         }
 
         public static void UpdateStock()
         {
-            if (!_loaded) return;
-
-            var storage = GameAPI.Instance.GetStorage();
-
-            foreach (var g in _goods)
-                g.CurrentAmount = storage.GetAmount(g.Id);
-        }
-
-        public static IEnumerable<GoodInfo> GetCriticalGoods()
-        {
-            return _goods
-                .Where(g => g.IsBelowThreshold)
-                .OrderBy(g => (float)g.CurrentAmount / g.Threshold)
-                .ThenBy(g => g.DisplayName);
-        }
-    }
-
-    public class GameReadyHook : MonoBehaviour
-    {
-        private System.Action _callback;
-
-        public void Init(System.Action cb)
-        {
-            _callback = cb;
-            GameAPI.Instance.GetGameServices().AddLoadingCallback(OnGameReady);
-        }
-
-        private void OnGameReady()
-        {
-            _callback?.Invoke();
-            Destroy(gameObject);
+            // Stock update logic will go here later
         }
     }
 }

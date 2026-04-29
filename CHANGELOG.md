@@ -2,6 +2,25 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.2] - 2026-04-29
+
+### Added
+- Added `Show HUD` toggle in the `F8` settings window.
+- Added `Movable HUD` toggle in the `F8` settings window.
+- Added saved HUD position persistence for dragged HUD placement.
+
+### Changed
+- Stock thresholds now mirror the game's global production limits from the Recipes menu.
+- HUD alerts now sort by newest triggered shortage first.
+- HUD now switches to two columns when more than 15 goods are listed.
+- HUD box now auto-sizes more tightly to its visible content.
+- HUD now hides automatically outside active missions.
+
+## [1.0.1] - 2026-04-28
+
+### Changed
+- Updated Thunderstore metadata to depend on ATS API 3.7.0.
+
 ## [1.0.0] - 2026-04-25
 
 ### Added

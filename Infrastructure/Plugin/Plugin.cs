@@ -8,7 +8,7 @@ using PanelUI = StockAlert.UI.Panels.UI;
 
 namespace StockAlert.Infrastructure.Plugin
 {
-    [BepInPlugin("StockAlert", "Stock Alert", "1.0.0")]
+    [BepInPlugin("StockAlert", "Stock Alert", StockAlertInfo.Version)]
     public class Plugin : BaseUnityPlugin
     {
         public static Plugin Instance;

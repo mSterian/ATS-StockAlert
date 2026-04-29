@@ -78,6 +78,20 @@ namespace StockAlert.UI.Panels
                 GUILayout.Label("Thresholds mirror the game's production limits.");
                 GUILayout.Space(8f);
 
+                var showHud = GUILayout.Toggle(ConfigManager.ShowHud, "Show HUD");
+                if (showHud != ConfigManager.ShowHud)
+                {
+                    ConfigManager.ShowHud = showHud;
+                }
+
+                var movableHud = GUILayout.Toggle(ConfigManager.MovableHud, "Movable HUD");
+                if (movableHud != ConfigManager.MovableHud)
+                {
+                    ConfigManager.MovableHud = movableHud;
+                }
+
+                GUILayout.Space(8f);
+
                 if (Discovery.Goods.Count == 0)
                 {
                     GUILayout.Label("No goods discovered yet.");

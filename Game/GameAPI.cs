@@ -12,6 +12,7 @@ namespace StockAlert.Game
         private static PropertyInfo _piMbSettings;
         private static PropertyInfo _piStorageService;
         private static PropertyInfo _piWorkshopsService;
+        private static PropertyInfo _piIsGameActive;
         private static MethodInfo _miGetAmount;
         private static MethodInfo _miGetGlobalLimit;
         private static PropertyInfo _piWorkshopLimits;
@@ -62,6 +63,29 @@ namespace StockAlert.Game
             catch (Exception)
             {
                 return 0;
+            }
+        }
+
+        public static bool IsGameActive()
+        {
+            try
+            {
+                if (_piIsGameActive == null)
+                {
+                    _piIsGameActive = typeof(GameMB).GetProperty("IsGameActive", BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
+                }
+
+                if (_piIsGameActive == null)
+                {
+                    return false;
+                }
+
+                var value = _piIsGameActive.GetValue(null, null);
+                return value is bool isActive && isActive;
+            }
+            catch (Exception)
+            {
+                return false;
             }
         }
 

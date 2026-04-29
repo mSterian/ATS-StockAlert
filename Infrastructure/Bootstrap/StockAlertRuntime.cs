@@ -1,5 +1,6 @@
 using UnityEngine;
 using StockAlert.Config;
+using StockAlert.Game;
 using StockAlert.Game.Discovery;
 using PanelUI = StockAlert.UI.Panels.UI;
 using SAPlugin = StockAlert.Infrastructure.Plugin.Plugin;
@@ -34,6 +35,11 @@ namespace StockAlert.Infrastructure.Bootstrap
             if (ConfigManager.ToggleSettingsKey.IsDown())
             {
                 PanelUI.Toggle();
+            }
+
+            if (!GameAPI.IsGameActive())
+            {
+                return;
             }
 
             if (Time.unscaledTime >= _nextRefreshTime)

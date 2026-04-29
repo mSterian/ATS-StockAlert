@@ -1,6 +1,8 @@
 using System.Linq;
 using System.Collections.Generic;
 using UnityEngine;
+using StockAlert.Config;
+using StockAlert.Game;
 using StockAlert.Game.Discovery;
 using StockAlert.Infrastructure.Plugin;
 
@@ -38,9 +40,19 @@ namespace StockAlert.UI.HUD
             private readonly HashSet<string> _activeAlertIds = new HashSet<string>();
             private readonly Dictionary<string, long> _alertOrder = new Dictionary<string, long>();
             private long _nextAlertOrder;
+            private bool _isDragging;
+            private Vector2 _dragOffset;
 
             private void OnGUI()
             {
+                if (!ConfigManager.ShowHud || !GameAPI.IsGameActive())
+                {
+                    _activeAlertIds.Clear();
+                    _alertOrder.Clear();
+                    _isDragging = false;
+                    return;
+                }
+
                 var belowThreshold = Discovery.Goods
                     .Where(g => g.IsBelowThreshold)
                     .ToList();
@@ -76,7 +88,7 @@ namespace StockAlert.UI.HUD
                 var visibleContentHeight = visibleRowCount * RowHeight;
                 var verticalPadding = _boxStyle.padding.top + _boxStyle.padding.bottom;
                 var visibleHeight = visibleContentHeight + verticalPadding;
-                var rect = new Rect(Screen.width - boxWidth - BoxMargin, Screen.height - visibleHeight - BoxMargin, boxWidth, visibleHeight);
+                var rect = GetHudRect(boxWidth, visibleHeight);
                 GUI.color = new Color(1f, 0.9f, 0.9f, 0.96f);
                 GUILayout.BeginArea(rect, _boxStyle);
                 GUI.color = Color.white;
@@ -95,6 +107,8 @@ namespace StockAlert.UI.HUD
                 }
 
                 GUILayout.EndArea();
+
+                HandleDragging(rect);
             }
 
             private void EnsureStyles()
@@ -185,6 +199,59 @@ namespace StockAlert.UI.HUD
 
                 GUILayout.Label($"{good.DisplayName}: {good.CurrentAmount}/{good.Threshold}", _lineStyle);
                 GUILayout.EndHorizontal();
+            }
+
+            private Rect GetHudRect(float width, float height)
+            {
+                var saved = ConfigManager.HudPosition;
+                if (saved.x < 0f || saved.y < 0f)
+                {
+                    return new Rect(Screen.width - width - BoxMargin, Screen.height - height - BoxMargin, width, height);
+                }
+
+                var clampedX = Mathf.Clamp(saved.x, 0f, Mathf.Max(0f, Screen.width - width));
+                var clampedY = Mathf.Clamp(saved.y, 0f, Mathf.Max(0f, Screen.height - height));
+                if (!Mathf.Approximately(clampedX, saved.x) || !Mathf.Approximately(clampedY, saved.y))
+                {
+                    ConfigManager.HudPosition = new Vector2(clampedX, clampedY);
+                }
+
+                return new Rect(clampedX, clampedY, width, height);
+            }
+
+            private void HandleDragging(Rect rect)
+            {
+                if (!ConfigManager.MovableHud)
+                {
+                    _isDragging = false;
+                    return;
+                }
+
+                var currentEvent = Event.current;
+                if (currentEvent == null)
+                {
+                    return;
+                }
+
+                if (currentEvent.type == EventType.MouseDown && currentEvent.button == 0 && rect.Contains(currentEvent.mousePosition))
+                {
+                    _isDragging = true;
+                    _dragOffset = currentEvent.mousePosition - new Vector2(rect.x, rect.y);
+                    currentEvent.Use();
+                }
+                else if (_isDragging && currentEvent.type == EventType.MouseDrag)
+                {
+                    var newPosition = currentEvent.mousePosition - _dragOffset;
+                    var clampedX = Mathf.Clamp(newPosition.x, 0f, Mathf.Max(0f, Screen.width - rect.width));
+                    var clampedY = Mathf.Clamp(newPosition.y, 0f, Mathf.Max(0f, Screen.height - rect.height));
+                    ConfigManager.HudPosition = new Vector2(clampedX, clampedY);
+                    currentEvent.Use();
+                }
+                else if (_isDragging && (currentEvent.type == EventType.MouseUp || currentEvent.rawType == EventType.MouseUp))
+                {
+                    _isDragging = false;
+                    currentEvent.Use();
+                }
             }
         }
     }

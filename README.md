@@ -22,6 +22,7 @@ If a good has no production limit, it is ignored by the mod.
 
 - Against the Storm
 - BepInEx 5
+- ATS API 3.7.0 or newer
 
 ## Build
 

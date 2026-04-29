@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.3] - 2026-04-29
+
+### Changed
+- Simplified the `F8` settings window to only show HUD controls.
+- Updated the README to reflect the current `F8` behavior.
+- Refreshed the Thunderstore package with the new screenshot-based icon.
+
 ## [1.0.2] - 2026-04-29
 
 ### Added

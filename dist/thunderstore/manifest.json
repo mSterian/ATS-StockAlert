@@ -1,6 +1,6 @@
 {
   "name": "StockAlert",
-  "version_number": "1.0.2",
+  "version_number": "1.0.3",
   "website_url": "https://github.com/mSterian/ATS-StockAlert",
   "description": "Warns you when a good drops below its in-game global production limit.",
   "dependencies": [

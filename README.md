@@ -8,7 +8,7 @@
 - uses that same production limit as the alert threshold
 - shows low-stock goods in a compact HUD list in the bottom-right corner
 - puts newly triggered shortages at the top of the list
-- opens a small overview window with `F8`
+- lets you press `F8` to toggle hide and move ability for the HUD
 
 If a good has no production limit, it is ignored by the mod.
 
@@ -16,7 +16,7 @@ If a good has no production limit, it is ignored by the mod.
 
 1. Set a global production limit for a good in the Recipes menu.
 2. When your current stock drops below that limit, the good appears in the Stock Alert HUD.
-3. Press `F8` to view the monitored goods and their current thresholds.
+3. Press `F8` to edit the hide and movable HUD settings.
 
 ## Requirements
 

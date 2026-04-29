@@ -1,9 +1,5 @@
-using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 using StockAlert.Config;
-using StockAlert.Core.Models;
-using StockAlert.Game.Discovery;
 using StockAlert.Infrastructure.Plugin;
 
 namespace StockAlert.UI.Panels
@@ -45,9 +41,7 @@ namespace StockAlert.UI.Panels
 
         private sealed class SettingsPanelBehaviour : MonoBehaviour
         {
-            private readonly Dictionary<string, string> _thresholdInputs = new Dictionary<string, string>();
-            private Rect _windowRect = new Rect(40f, 40f, 480f, 640f);
-            private Vector2 _scrollPosition;
+            private Rect _windowRect = new Rect(40f, 40f, 340f, 180f);
 
             public bool Visible { get; private set; }
 
@@ -75,7 +69,7 @@ namespace StockAlert.UI.Panels
             {
                 GUILayout.BeginVertical();
                 GUILayout.Label("Toggle key: " + ConfigManager.ToggleSettingsKey);
-                GUILayout.Label("Thresholds mirror the game's production limits.");
+                GUILayout.Label("Use these settings to hide the HUD or make it draggable.");
                 GUILayout.Space(8f);
 
                 var showHud = GUILayout.Toggle(ConfigManager.ShowHud, "Show HUD");
@@ -91,20 +85,6 @@ namespace StockAlert.UI.Panels
                 }
 
                 GUILayout.Space(8f);
-
-                if (Discovery.Goods.Count == 0)
-                {
-                    GUILayout.Label("No goods discovered yet.");
-                }
-
-                _scrollPosition = GUILayout.BeginScrollView(_scrollPosition, GUILayout.ExpandHeight(true));
-                foreach (var good in Discovery.Goods.OrderBy(g => g.DisplayName))
-                {
-                    DrawGoodRow(good);
-                }
-                GUILayout.EndScrollView();
-
-                GUILayout.Space(8f);
                 if (GUILayout.Button("Close"))
                 {
                     Visible = false;
@@ -114,31 +94,8 @@ namespace StockAlert.UI.Panels
                 GUI.DragWindow(new Rect(0f, 0f, 10000f, 24f));
             }
 
-            private void DrawGoodRow(GoodInfo good)
-            {
-                if (!_thresholdInputs.TryGetValue(good.Id, out var currentInput))
-                {
-                    currentInput = good.Threshold.ToString();
-                    _thresholdInputs[good.Id] = currentInput;
-                }
-
-                GUILayout.BeginHorizontal("box");
-
-                GUILayout.Label(good.DisplayName, GUILayout.Width(220f));
-                GUILayout.Label("Stock: " + good.CurrentAmount, GUILayout.Width(90f));
-                GUILayout.Label("Limit", GUILayout.Width(35f));
-                GUILayout.Label(currentInput, GUILayout.Width(70f));
-
-                GUILayout.EndHorizontal();
-            }
-
             public void RefreshInputs()
             {
-                _thresholdInputs.Clear();
-                foreach (var good in Discovery.Goods)
-                {
-                    _thresholdInputs[good.Id] = good.Threshold.ToString();
-                }
             }
         }
     }

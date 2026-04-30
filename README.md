@@ -4,12 +4,13 @@
 
 ## What it does
 
-- watches goods that have a production limit set in the Recipes menu
-- uses that same production limit as the alert threshold
-- can optionally auto-adjust eligible global production limits from villager consumption counts
-- shows low-stock goods in a compact HUD list in the bottom-right corner
-- puts newly triggered shortages at the top of the list
-- lets you press `F8` to toggle hide and move ability for the HUD
+Displays goods that have a production limit set in the Recipes menu, and shows their current/max stock in a compact, movable, hideable HUD in the bottom-right corner.
+
+It can also optionally auto-adjust production limits for all goods you currently have a recipe for, based on the number of people consuming them and an adjustable multiplier.
+
+Newly triggered shortages go at the top of the list.
+
+Options for movable, hideable, and production limit multiplier are available in the `F8` settings window.
 
 If a good has no production limit, it is ignored by the mod.
 
@@ -26,7 +27,7 @@ If a good has no production limit, it is ignored by the mod.
 - when enabled, the mod checks how many alive villagers can consume a good and sets that good's global production limit to `consumers x multiplier`
 - the multiplier is editable in the `F8` window from `1.0` to `9.0`
 - values round up to the next whole number
-- only goods with live recipes in your current settlement are adjusted
+- only goods for recipes you currently have available in the settlement are adjusted
 - disabling the option stops further automatic changes, but does not restore previous manual limits
 
 ## Requirements

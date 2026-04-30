@@ -10,7 +10,7 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 - Auto-adjusted limits now round up to the next whole number.
-- Auto-adjust only affects goods that have live recipes in the current settlement.
+- Auto-adjust only affects goods for recipes currently available in the settlement.
 - Updated the README to document the new automation behavior and that it is off by default.
 
 ## [1.0.3] - 2026-04-29

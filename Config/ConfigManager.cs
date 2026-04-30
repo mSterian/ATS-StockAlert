@@ -13,6 +13,7 @@ namespace StockAlert.Config
         private static ConfigEntry<KeyboardShortcut> _toggleSettingsKey;
         private static ConfigEntry<bool> _showHud;
         private static ConfigEntry<bool> _movableHud;
+        private static ConfigEntry<bool> _showBuildingAlertIndicators;
         private static ConfigEntry<bool> _autoAdjustProductionLimits;
         private static ConfigEntry<float> _autoAdjustMultiplier;
         private static ConfigEntry<float> _hudPositionX;
@@ -43,6 +44,12 @@ namespace StockAlert.Config
                 "MovableHUD",
                 false,
                 "Allow dragging the Stock Alert HUD."
+            );
+            _showBuildingAlertIndicators = _config.Bind(
+                "HUD",
+                "ShowBuildingAlertIndicators",
+                true,
+                "Show red and yellow worker markers over recipe buildings related to current shortages."
             );
             _autoAdjustProductionLimits = _config.Bind(
                 "Automation",
@@ -124,6 +131,21 @@ namespace StockAlert.Config
                 Load();
                 _hudPositionX.Value = value.x;
                 _hudPositionY.Value = value.y;
+                _config.Save();
+            }
+        }
+
+        public static bool ShowBuildingAlertIndicators
+        {
+            get
+            {
+                Load();
+                return _showBuildingAlertIndicators.Value;
+            }
+            set
+            {
+                Load();
+                _showBuildingAlertIndicators.Value = value;
                 _config.Save();
             }
         }

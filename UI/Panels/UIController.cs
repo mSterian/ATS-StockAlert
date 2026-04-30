@@ -2,6 +2,7 @@ using UnityEngine;
 using StockAlert.Config;
 using StockAlert.Game;
 using StockAlert.Infrastructure.Plugin;
+using StockAlert.UI.World;
 
 namespace StockAlert.UI.Panels
 {
@@ -84,6 +85,23 @@ namespace StockAlert.UI.Panels
                 if (movableHud != ConfigManager.MovableHud)
                 {
                     ConfigManager.MovableHud = movableHud;
+                }
+
+                var buildingIndicators = GUILayout.Toggle(
+                    ConfigManager.ShowBuildingAlertIndicators,
+                    "Building shortage indicators"
+                );
+                if (buildingIndicators != ConfigManager.ShowBuildingAlertIndicators)
+                {
+                    ConfigManager.ShowBuildingAlertIndicators = buildingIndicators;
+                    if (buildingIndicators)
+                    {
+                        BuildingAlertIndicators.Refresh();
+                    }
+                    else
+                    {
+                        BuildingAlertIndicators.RestoreVanilla();
+                    }
                 }
 
                 GUILayout.Space(10f);

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Eremite.Buildings;
+using StockAlert.Config;
 using StockAlert.Game;
 using StockAlert.Game.Discovery;
 using UnityEngine;
@@ -19,6 +20,12 @@ namespace StockAlert.UI.World
 
         public static void Refresh()
         {
+            if (!ConfigManager.ShowBuildingAlertIndicators)
+            {
+                RestoreVanilla();
+                return;
+            }
+
             var lowGoods = new HashSet<string>(
                 Discovery.Goods.Where(g => g.IsBelowThreshold).Select(g => g.Id),
                 StringComparer.OrdinalIgnoreCase
@@ -42,6 +49,37 @@ namespace StockAlert.UI.World
             {
                 LastApplied.Remove(id);
             }
+        }
+
+        public static void RestoreVanilla()
+        {
+            foreach (var workshop in GetRecipeBuildings())
+            {
+                var building = workshop.Base;
+                if (building == null)
+                {
+                    continue;
+                }
+
+                var icon = building.BuildingView?.transform?.Find("ToRotate/UI/NoWorkersIcon")?.gameObject;
+                if (icon == null)
+                {
+                    continue;
+                }
+
+                var active = building.BuildingState != null &&
+                             building.BuildingState.finished &&
+                             !building.BuildingState.isSleeping &&
+                             building.CountWorkers() == 0;
+
+                icon.SetActive(active);
+                foreach (var spriteRenderer in icon.GetComponentsInChildren<SpriteRenderer>(true))
+                {
+                    spriteRenderer.color = WhiteColor;
+                }
+            }
+
+            LastApplied.Clear();
         }
 
         private static IEnumerable<IWorkshop> GetRecipeBuildings()

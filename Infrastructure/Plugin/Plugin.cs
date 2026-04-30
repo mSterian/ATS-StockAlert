@@ -1,6 +1,7 @@
 using BepInEx;
 using HarmonyLib;
 using StockAlert.Config;
+using StockAlert.Game;
 using StockAlert.Game.Discovery;
 using StockAlert.Infrastructure.Bootstrap;
 using StockAlert.UI.HUD;
@@ -49,10 +50,12 @@ namespace StockAlert.Infrastructure.Plugin
             _gameReadyInitialized = true;
             Log("OnGameReady() fired - initializing mod");
             Discovery.Initialize();
+            AutoProductionLimits.Initialize();
             HUD.Initialize();
             PanelUI.Initialize();
             PanelUI.Refresh();
             StockAlertRuntime.Initialize();
+            AutoProductionLimits.ApplyCurrentTargets();
         }
     }
 }

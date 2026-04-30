@@ -13,6 +13,8 @@ namespace StockAlert.Config
         private static ConfigEntry<KeyboardShortcut> _toggleSettingsKey;
         private static ConfigEntry<bool> _showHud;
         private static ConfigEntry<bool> _movableHud;
+        private static ConfigEntry<bool> _autoAdjustProductionLimits;
+        private static ConfigEntry<float> _autoAdjustMultiplier;
         private static ConfigEntry<float> _hudPositionX;
         private static ConfigEntry<float> _hudPositionY;
 
@@ -41,6 +43,21 @@ namespace StockAlert.Config
                 "MovableHUD",
                 false,
                 "Allow dragging the Stock Alert HUD."
+            );
+            _autoAdjustProductionLimits = _config.Bind(
+                "Automation",
+                "AutoAdjustProductionLimits",
+                false,
+                "Automatically adjust global production limits based on the number of villagers that can consume each good."
+            );
+            _autoAdjustMultiplier = _config.Bind(
+                "Automation",
+                "ProductionLimitMultiplier",
+                2f,
+                new ConfigDescription(
+                    "Multiplier applied per consuming villager when auto-adjusting production limits. Range: 1.0 to 9.0.",
+                    new AcceptableValueRange<float>(1f, 9f)
+                )
             );
             _hudPositionX = _config.Bind(
                 "HUD",
@@ -111,6 +128,36 @@ namespace StockAlert.Config
             }
         }
 
+        public static bool AutoAdjustProductionLimits
+        {
+            get
+            {
+                Load();
+                return _autoAdjustProductionLimits.Value;
+            }
+            set
+            {
+                Load();
+                _autoAdjustProductionLimits.Value = value;
+                _config.Save();
+            }
+        }
+
+        public static float AutoAdjustMultiplier
+        {
+            get
+            {
+                Load();
+                return NormalizeMultiplier(_autoAdjustMultiplier.Value);
+            }
+            set
+            {
+                Load();
+                _autoAdjustMultiplier.Value = NormalizeMultiplier(value);
+                _config.Save();
+            }
+        }
+
         public static void EnsureGoodConfig(GoodInfo g)
         {
             Load();
@@ -147,6 +194,11 @@ namespace StockAlert.Config
             }
 
             return false;
+        }
+
+        private static float NormalizeMultiplier(float value)
+        {
+            return Mathf.Clamp(Mathf.Round(value * 10f) / 10f, 1f, 9f);
         }
     }
 }

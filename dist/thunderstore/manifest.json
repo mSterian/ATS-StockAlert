@@ -1,8 +1,8 @@
 {
   "name": "StockAlert",
-  "version_number": "1.0.3",
+  "version_number": "1.0.4",
   "website_url": "https://github.com/mSterian/ATS-StockAlert",
-  "description": "Warns you when a good drops below its in-game global production limit.",
+  "description": "Warns on low stock from production limits, with optional consumer-based auto-adjustment.",
   "dependencies": [
     "BepInEx-BepInExPack-5.4.2100",
     "ATS_API_Devs-API-3.7.0"

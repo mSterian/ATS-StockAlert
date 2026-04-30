@@ -1,5 +1,6 @@
 using UnityEngine;
 using StockAlert.Config;
+using StockAlert.Game;
 using StockAlert.Infrastructure.Plugin;
 
 namespace StockAlert.UI.Panels
@@ -41,7 +42,8 @@ namespace StockAlert.UI.Panels
 
         private sealed class SettingsPanelBehaviour : MonoBehaviour
         {
-            private Rect _windowRect = new Rect(40f, 40f, 340f, 180f);
+            private Rect _windowRect = new Rect(40f, 40f, 380f, 250f);
+            private string _multiplierInput = "2.0";
 
             public bool Visible { get; private set; }
 
@@ -69,7 +71,7 @@ namespace StockAlert.UI.Panels
             {
                 GUILayout.BeginVertical();
                 GUILayout.Label("Toggle key: " + ConfigManager.ToggleSettingsKey);
-                GUILayout.Label("Use these settings to hide the HUD or make it draggable.");
+                GUILayout.Label("Use these settings to control the HUD and optional production automation.");
                 GUILayout.Space(8f);
 
                 var showHud = GUILayout.Toggle(ConfigManager.ShowHud, "Show HUD");
@@ -84,6 +86,40 @@ namespace StockAlert.UI.Panels
                     ConfigManager.MovableHud = movableHud;
                 }
 
+                GUILayout.Space(10f);
+
+                var autoAdjust = GUILayout.Toggle(
+                    ConfigManager.AutoAdjustProductionLimits,
+                    "Auto-adjust production limits from consumers"
+                );
+                if (autoAdjust != ConfigManager.AutoAdjustProductionLimits)
+                {
+                    ConfigManager.AutoAdjustProductionLimits = autoAdjust;
+                    if (autoAdjust)
+                    {
+                        AutoProductionLimits.ApplyCurrentTargets();
+                    }
+                }
+
+                GUILayout.BeginHorizontal();
+                GUILayout.Label("Multiplier", GUILayout.Width(70f));
+                var nextInput = GUILayout.TextField(_multiplierInput ?? string.Empty, GUILayout.Width(60f));
+                if (nextInput != _multiplierInput)
+                {
+                    _multiplierInput = nextInput;
+                    if (TryParseMultiplier(_multiplierInput, out var multiplier))
+                    {
+                        ConfigManager.AutoAdjustMultiplier = multiplier;
+                        _multiplierInput = ConfigManager.AutoAdjustMultiplier.ToString("0.0");
+                        if (ConfigManager.AutoAdjustProductionLimits)
+                        {
+                            AutoProductionLimits.ApplyCurrentTargets();
+                        }
+                    }
+                }
+                GUILayout.Label("(1.0 - 9.0)");
+                GUILayout.EndHorizontal();
+
                 GUILayout.Space(8f);
                 if (GUILayout.Button("Close"))
                 {
@@ -96,6 +132,25 @@ namespace StockAlert.UI.Panels
 
             public void RefreshInputs()
             {
+                _multiplierInput = ConfigManager.AutoAdjustMultiplier.ToString("0.0");
+            }
+
+            private static bool TryParseMultiplier(string raw, out float value)
+            {
+                value = 0f;
+                if (string.IsNullOrWhiteSpace(raw))
+                {
+                    return false;
+                }
+
+                var normalized = raw.Trim().Replace(',', '.');
+                if (!float.TryParse(normalized, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out value))
+                {
+                    return false;
+                }
+
+                value = Mathf.Clamp(Mathf.Round(value * 10f) / 10f, 1f, 9f);
+                return true;
             }
         }
     }

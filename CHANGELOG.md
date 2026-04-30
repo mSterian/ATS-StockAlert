@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.4] - 2026-04-30
+
+### Added
+- Added an `F8` option to automatically adjust global production limits from villager consumption counts.
+- Added an editable auto-adjust multiplier field from `1.0` to `9.0`.
+
+### Changed
+- Auto-adjusted limits now round up to the next whole number.
+- Auto-adjust only affects goods that have live recipes in the current settlement.
+- Updated the README to document the new automation behavior and that it is off by default.
+
 ## [1.0.3] - 2026-04-29
 
 ### Changed

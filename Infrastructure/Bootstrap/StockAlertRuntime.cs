@@ -11,6 +11,7 @@ namespace StockAlert.Infrastructure.Bootstrap
     {
         private static StockAlertRuntime _instance;
         private float _nextRefreshTime;
+        private float _nextAutoAdjustTime;
 
         public static void Initialize()
         {
@@ -46,6 +47,17 @@ namespace StockAlert.Infrastructure.Bootstrap
             {
                 _nextRefreshTime = Time.unscaledTime + 1f;
                 Discovery.UpdateStock();
+            }
+
+            if (!ConfigManager.AutoAdjustProductionLimits)
+            {
+                return;
+            }
+
+            if (Time.unscaledTime >= _nextAutoAdjustTime)
+            {
+                _nextAutoAdjustTime = Time.unscaledTime + 2f;
+                AutoProductionLimits.ApplyCurrentTargets();
             }
         }
     }

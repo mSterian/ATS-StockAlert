@@ -278,12 +278,7 @@ namespace StockAlert.Game
 
             try
             {
-                if (_piBuildingsService == null)
-                {
-                    _piBuildingsService = typeof(GameMB).GetProperty("BuildingsService", BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
-                }
-
-                var buildingsService = _piBuildingsService?.GetValue(null, null);
+                var buildingsService = GetBuildingsService();
                 if (buildingsService == null)
                 {
                     return goods;
@@ -299,6 +294,28 @@ namespace StockAlert.Game
             return goods;
         }
 
+        public static List<IWorkshop> GetRecipeBuildings()
+        {
+            var result = new List<IWorkshop>();
+
+            try
+            {
+                var buildingsService = GetBuildingsService();
+                if (buildingsService == null)
+                {
+                    return result;
+                }
+
+                AddWorkshopsFromDictionary(buildingsService, "Workshops", ref _piWorkshops, result);
+                AddWorkshopsFromDictionary(buildingsService, "BlightPosts", ref _piBlightPosts, result);
+            }
+            catch (Exception)
+            {
+            }
+
+            return result;
+        }
+
         private static object GetWorkshopsService()
         {
             if (_piWorkshopsService == null)
@@ -307,6 +324,16 @@ namespace StockAlert.Game
             }
 
             return _piWorkshopsService?.GetValue(null, null);
+        }
+
+        private static object GetBuildingsService()
+        {
+            if (_piBuildingsService == null)
+            {
+                _piBuildingsService = typeof(GameMB).GetProperty("BuildingsService", BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
+            }
+
+            return _piBuildingsService?.GetValue(null, null);
         }
 
         private static void AddRecipeGoodsFromDictionary(object buildingsService, string propertyName, ref PropertyInfo propertyInfo, HashSet<string> goods)
@@ -328,6 +355,24 @@ namespace StockAlert.Game
                 foreach (var recipe in workshop.Recipes.Where(r => r != null && !string.IsNullOrWhiteSpace(r.productName)))
                 {
                     goods.Add(recipe.productName);
+                }
+            }
+        }
+
+        private static void AddWorkshopsFromDictionary(object buildingsService, string propertyName, ref PropertyInfo propertyInfo, List<IWorkshop> workshops)
+        {
+            propertyInfo ??= buildingsService.GetType().GetProperty(propertyName, BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
+            var entries = propertyInfo?.GetValue(buildingsService, null) as IDictionary;
+            if (entries == null)
+            {
+                return;
+            }
+
+            foreach (DictionaryEntry entry in entries)
+            {
+                if (entry.Value is IWorkshop workshop)
+                {
+                    workshops.Add(workshop);
                 }
             }
         }

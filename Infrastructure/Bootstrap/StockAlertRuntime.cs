@@ -4,6 +4,7 @@ using StockAlert.Game;
 using StockAlert.Game.Discovery;
 using PanelUI = StockAlert.UI.Panels.UI;
 using SAPlugin = StockAlert.Infrastructure.Plugin.Plugin;
+using StockAlert.UI.World;
 
 namespace StockAlert.Infrastructure.Bootstrap
 {
@@ -47,6 +48,7 @@ namespace StockAlert.Infrastructure.Bootstrap
             {
                 _nextRefreshTime = Time.unscaledTime + 1f;
                 Discovery.UpdateStock();
+                BuildingAlertIndicators.Refresh();
             }
 
             if (!ConfigManager.AutoAdjustProductionLimits)

@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.5] - 2026-04-30
+
+### Added
+- Added world-space staffing indicators for recipe buildings tied to current shortages.
+- Added red indicators for buildings that can produce under-threshold goods but have no workers assigned.
+- Added yellow indicators for buildings that can produce under-threshold goods and are partially staffed.
+
+### Changed
+- Unmanned recipe buildings without current shortage relevance now keep the normal white vanilla worker icon.
+- Updated the README to explain the new building indicator behavior.
+
 ## [1.0.4] - 2026-04-30
 
 ### Added

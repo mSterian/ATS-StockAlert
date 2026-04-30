@@ -8,14 +8,14 @@ Displays goods that have a production limit set in the Recipes menu, and shows t
 
 It can also optionally auto-adjust production limits for all goods you currently have a recipe for, based on the number of people consuming them and an adjustable multiplier.
 
-It highlights recipe buildings in the world when they can produce goods that are currently under threshold:
+It can also optionally highlight recipe buildings in the world when they can produce goods that are currently under threshold:
 - red when the building can help, but has no workers assigned
 - yellow when the building can help, has at least one worker, but is not fully staffed
 - normal white vanilla icon when the building is unmanned but none of its recipes are currently under threshold
 
 Newly triggered shortages go at the top of the list.
 
-Options for movable, hideable, and production limit multiplier are available in the `F8` settings window.
+Options for movable, hideable, building indicators, and production limit multiplier are available in the `F8` settings window.
 
 If a good has no production limit, it is ignored by the mod.
 
@@ -25,7 +25,7 @@ If a good has no production limit, it is ignored by the mod.
 2. When your current stock drops below that limit, the good appears in the Stock Alert HUD.
 3. Press `F8` to edit the hide and movable HUD settings.
 4. Optional: enable auto-adjust in the `F8` window to make the mod set eligible global production limits for you.
-5. Watch for red and yellow worker icons over recipe buildings to spot where extra staffing would help with current shortages.
+5. Optional: enable building shortage indicators in the `F8` window to spot where extra staffing would help with current shortages.
 
 ## Auto-adjust option
 

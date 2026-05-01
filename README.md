@@ -8,7 +8,7 @@ Displays goods that have a production limit set in the Recipes menu, and shows t
 
 It can also optionally auto-adjust production limits for all goods you currently have a recipe for, based on the number of people consuming them and an adjustable multiplier.
 
-It can also optionally highlight recipe buildings in the world when they can produce goods that are currently under threshold:
+It can also optionally highlight recipe buildings in the world when they have an enabled recipe for goods that are currently under threshold:
 - red when the building can help, but has no workers assigned
 - yellow when the building can help, has at least one worker, but is not fully staffed
 - normal white vanilla icon when the building is unmanned but none of its recipes are currently under threshold

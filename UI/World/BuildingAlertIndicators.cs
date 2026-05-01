@@ -90,7 +90,10 @@ namespace StockAlert.UI.World
             }
         }
 
-        private static void ApplyIndicatorState(ProductionBuilding building, IWorkshop workshop, HashSet<string> lowGoods)
+        private static void ApplyIndicatorState(
+            ProductionBuilding building,
+            IWorkshop workshop,
+            HashSet<string> lowGoods)
         {
             var icon = building.BuildingView?.transform?.Find("ToRotate/UI/NoWorkersIcon")?.gameObject;
             if (icon == null)
@@ -100,7 +103,7 @@ namespace StockAlert.UI.World
 
             var workerCount = building.CountWorkers();
             var maxWorkers = building.Workplaces?.Length ?? 0;
-            var hasRelevantLowRecipe = workshop.Recipes.Any(r => r != null && !string.IsNullOrWhiteSpace(r.productName) && lowGoods.Contains(r.productName));
+            var hasRelevantLowRecipe = workshop.Recipes.Any(r => IsEnabledLowRecipe(r, lowGoods));
 
             var active = false;
             var color = WhiteColor;
@@ -129,6 +132,18 @@ namespace StockAlert.UI.World
             }
 
             LastApplied[building.Id] = snapshot;
+        }
+
+        private static bool IsEnabledLowRecipe(WorkshopRecipeState recipeState, HashSet<string> lowGoods)
+        {
+            if (recipeState == null ||
+                !recipeState.active ||
+                string.IsNullOrWhiteSpace(recipeState.productName) ||
+                !lowGoods.Contains(recipeState.productName))
+            {
+                return false;
+            }
+            return true;
         }
 
         private readonly struct IndicatorSnapshot : IEquatable<IndicatorSnapshot>

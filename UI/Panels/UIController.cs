@@ -104,6 +104,23 @@ namespace StockAlert.UI.Panels
                     }
                 }
 
+                var builderStatusIcons = GUILayout.Toggle(
+                    ConfigManager.ShowBuilderStatusIcons,
+                    "Builder status icons"
+                );
+                if (builderStatusIcons != ConfigManager.ShowBuilderStatusIcons)
+                {
+                    ConfigManager.ShowBuilderStatusIcons = builderStatusIcons;
+                    if (builderStatusIcons)
+                    {
+                        BuilderStatusIndicators.Refresh();
+                    }
+                    else
+                    {
+                        BuilderStatusIndicators.Clear();
+                    }
+                }
+
                 GUILayout.Space(10f);
 
                 var autoAdjust = GUILayout.Toggle(

@@ -13,6 +13,7 @@ namespace StockAlert.Infrastructure.Bootstrap
         private static StockAlertRuntime _instance;
         private float _nextRefreshTime;
         private float _nextAutoAdjustTime;
+        private float _nextBuilderStatusRefreshTime;
 
         public static void Initialize()
         {
@@ -41,6 +42,7 @@ namespace StockAlert.Infrastructure.Bootstrap
 
             if (!GameAPI.IsGameActive())
             {
+                BuilderStatusIndicators.Clear();
                 return;
             }
 
@@ -49,6 +51,12 @@ namespace StockAlert.Infrastructure.Bootstrap
                 _nextRefreshTime = Time.unscaledTime + 1f;
                 Discovery.UpdateStock();
                 BuildingAlertIndicators.Refresh();
+            }
+
+            if (Time.unscaledTime >= _nextBuilderStatusRefreshTime)
+            {
+                _nextBuilderStatusRefreshTime = Time.unscaledTime + 0.5f;
+                BuilderStatusIndicators.Refresh();
             }
 
             if (!ConfigManager.AutoAdjustProductionLimits)

@@ -13,9 +13,13 @@ It can also optionally highlight recipe buildings in the world when they have an
 - yellow when the building can help, has at least one worker, but is not fully staffed
 - normal white vanilla icon when the building is unmanned but none of its recipes are currently under threshold
 
+Integrated Builder Icon mod made by ~DGH into my mod with some changes:
+- the exclamation marker for builders that are idling
+- the hammer icon for all other builders
+
 Newly triggered shortages go at the top of the list.
 
-Options for movable, hideable, building indicators, and production limit multiplier are available in the `F8` settings window.
+Options for movable, hideable, building indicators, builder status icons, and production limit multiplier are available in the `F8` settings window.
 
 If a good has no production limit, it is ignored by the mod.
 
@@ -26,6 +30,7 @@ If a good has no production limit, it is ignored by the mod.
 3. Press `F8` to edit the hide and movable HUD settings.
 4. Optional: enable auto-adjust in the `F8` window to make the mod set eligible global production limits for you.
 5. Optional: enable building shortage indicators in the `F8` window to spot where extra staffing would help with current shortages.
+6. Optional: enable builder status icons in the `F8` window to distinguish idle free builders from busy free builders.
 
 ## Auto-adjust option
 
@@ -41,6 +46,10 @@ If a good has no production limit, it is ignored by the mod.
 - Against the Storm
 - BepInEx 5
 - ATS API 3.7.0 or newer
+
+## Credits
+
+- Builder status icon feature adapted from `BuilderIcon` source by `~DGH`
 
 ## Build
 

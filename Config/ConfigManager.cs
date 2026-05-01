@@ -14,6 +14,7 @@ namespace StockAlert.Config
         private static ConfigEntry<bool> _showHud;
         private static ConfigEntry<bool> _movableHud;
         private static ConfigEntry<bool> _showBuildingAlertIndicators;
+        private static ConfigEntry<bool> _showBuilderStatusIcons;
         private static ConfigEntry<bool> _autoAdjustProductionLimits;
         private static ConfigEntry<float> _autoAdjustMultiplier;
         private static ConfigEntry<float> _hudPositionX;
@@ -50,6 +51,12 @@ namespace StockAlert.Config
                 "ShowBuildingAlertIndicators",
                 true,
                 "Show red and yellow worker markers over recipe buildings related to current shortages."
+            );
+            _showBuilderStatusIcons = _config.Bind(
+                "HUD",
+                "ShowBuilderStatusIcons",
+                false,
+                "Show idle and working icons over free builder villagers."
             );
             _autoAdjustProductionLimits = _config.Bind(
                 "Automation",
@@ -146,6 +153,21 @@ namespace StockAlert.Config
             {
                 Load();
                 _showBuildingAlertIndicators.Value = value;
+                _config.Save();
+            }
+        }
+
+        public static bool ShowBuilderStatusIcons
+        {
+            get
+            {
+                Load();
+                return _showBuilderStatusIcons.Value;
+            }
+            set
+            {
+                Load();
+                _showBuilderStatusIcons.Value = value;
                 _config.Save();
             }
         }

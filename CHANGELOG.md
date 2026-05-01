@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.8] - 2026-05-01
+
+### Added
+- Integrated Builder Icon mod into my mod, because I wanted to make some changes to it. Credit to ~DGH! (off by default for those who still want to use the original mod separately)
+- My version of the builder icons now shows the exclamation marker over idling builders, while the other builders show the hammer icon.
+
+### Credits
+- Builder status icon feature adapted from `BuilderIcon` source by `~DGH`.
+
 ## [1.0.7] - 2026-05-01
 
 ### Changed

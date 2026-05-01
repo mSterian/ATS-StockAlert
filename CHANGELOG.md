@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.7] - 2026-05-01
+
+### Changed
+- Changed the HUD pin to the bottom-right corner. It should no longer leave empty space below the HUD after the list shrinks, and instead moves the list down to stay anchored.
+- A pin placement option may be added in a future version.
+
 ## [1.0.6] - 2026-05-01
 
 ### Changed

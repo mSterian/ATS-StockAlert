@@ -42,6 +42,7 @@ namespace StockAlert.UI.HUD
             private long _nextAlertOrder;
             private bool _isDragging;
             private Vector2 _dragOffset;
+            private Vector2? _lastHudSize;
 
             private void OnGUI()
             {
@@ -206,16 +207,29 @@ namespace StockAlert.UI.HUD
                 var saved = ConfigManager.HudPosition;
                 if (saved.x < 0f || saved.y < 0f)
                 {
+                    _lastHudSize = new Vector2(width, height);
                     return new Rect(Screen.width - width - BoxMargin, Screen.height - height - BoxMargin, width, height);
+                }
+
+                if (!_isDragging && _lastHudSize.HasValue)
+                {
+                    var previousSize = _lastHudSize.Value;
+                    var deltaX = previousSize.x - width;
+                    var deltaY = previousSize.y - height;
+                    if (!Mathf.Approximately(deltaX, 0f) || !Mathf.Approximately(deltaY, 0f))
+                    {
+                        saved = new Vector2(saved.x + deltaX, saved.y + deltaY);
+                    }
                 }
 
                 var clampedX = Mathf.Clamp(saved.x, 0f, Mathf.Max(0f, Screen.width - width));
                 var clampedY = Mathf.Clamp(saved.y, 0f, Mathf.Max(0f, Screen.height - height));
-                if (!Mathf.Approximately(clampedX, saved.x) || !Mathf.Approximately(clampedY, saved.y))
+                if (!Mathf.Approximately(clampedX, ConfigManager.HudPosition.x) || !Mathf.Approximately(clampedY, ConfigManager.HudPosition.y))
                 {
                     ConfigManager.HudPosition = new Vector2(clampedX, clampedY);
                 }
 
+                _lastHudSize = new Vector2(width, height);
                 return new Rect(clampedX, clampedY, width, height);
             }
 

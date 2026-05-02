@@ -27,14 +27,13 @@ namespace StockAlert.Game
 
         public static void ApplyCurrentTargets()
         {
-            if (!ConfigManager.AutoAdjustProductionLimits || !GameAPI.IsGameActive())
+            if ((!ConfigManager.AutoAdjustProductionLimits && !ConfigManager.AutoAdjustPurgingFire) || !GameAPI.IsGameActive())
             {
                 return;
             }
 
             Initialize();
 
-            var multiplier = ConfigManager.AutoAdjustMultiplier;
             var availableRecipeGoods = GameAPI.GetAvailableRecipeGoods();
             if (availableRecipeGoods.Count == 0)
             {
@@ -43,29 +42,39 @@ namespace StockAlert.Game
 
             var changed = false;
 
-            foreach (var entry in ConsumingRacesByGood)
+            if (ConfigManager.AutoAdjustProductionLimits)
             {
-                if (!availableRecipeGoods.Contains(entry.Key))
-                {
-                    continue;
-                }
+                var multiplier = ConfigManager.AutoAdjustMultiplier;
 
-                var consumerCount = 0;
-                foreach (var raceId in entry.Value)
+                foreach (var entry in ConsumingRacesByGood)
                 {
-                    consumerCount += GameAPI.GetAliveVillagerCount(raceId);
-                }
+                    if (!availableRecipeGoods.Contains(entry.Key))
+                    {
+                        continue;
+                    }
 
-                var targetLimit = Mathf.Max(0, Mathf.CeilToInt(consumerCount * multiplier));
-                var currentLimit = GameAPI.GetProductionLimit(null, entry.Key);
-                if (currentLimit == targetLimit)
-                {
-                    continue;
-                }
+                    var consumerCount = 0;
+                    foreach (var raceId in entry.Value)
+                    {
+                        consumerCount += GameAPI.GetAliveVillagerCount(raceId);
+                    }
 
-                GameAPI.SetProductionLimit(entry.Key, targetLimit);
-                Plugin.Log($"Auto-adjusted production limit for {entry.Key} => {targetLimit} ({consumerCount} consumers x {multiplier:0.0})");
-                changed = true;
+                    var targetLimit = Mathf.Max(0, Mathf.CeilToInt(consumerCount * multiplier));
+                    var currentLimit = GameAPI.GetProductionLimit(null, entry.Key);
+                    if (currentLimit == targetLimit)
+                    {
+                        continue;
+                    }
+
+                    GameAPI.SetProductionLimit(entry.Key, targetLimit);
+                    Plugin.Log($"Auto-adjusted production limit for {entry.Key} => {targetLimit} ({consumerCount} consumers x {multiplier:0.0})");
+                    changed = true;
+                }
+            }
+
+            if (ConfigManager.AutoAdjustPurgingFire)
+            {
+                changed |= ApplyBlightFuelTarget(availableRecipeGoods);
             }
 
             if (changed)
@@ -110,6 +119,26 @@ namespace StockAlert.Game
             }
 
             Plugin.Log($"AutoProductionLimits: mapped {ConsumingRacesByGood.Count} consumable goods");
+        }
+
+        private static bool ApplyBlightFuelTarget(HashSet<string> availableRecipeGoods)
+        {
+            var blightFuelId = GameAPI.GetBlightPostFuelId();
+            if (string.IsNullOrWhiteSpace(blightFuelId) || !availableRecipeGoods.Contains(blightFuelId))
+            {
+                return false;
+            }
+
+            var targetLimit = Mathf.Max(0, GameAPI.GetGlobalActiveCysts() + 1);
+            var currentLimit = GameAPI.GetProductionLimit(null, blightFuelId);
+            if (currentLimit == targetLimit)
+            {
+                return false;
+            }
+
+            GameAPI.SetProductionLimit(blightFuelId, targetLimit);
+            Plugin.Log($"Auto-adjusted production limit for {blightFuelId} => {targetLimit} ({targetLimit - 1} cysts + 1)");
+            return true;
         }
     }
 }

@@ -16,6 +16,7 @@ namespace StockAlert.Config
         private static ConfigEntry<bool> _showBuildingAlertIndicators;
         private static ConfigEntry<bool> _showBuilderStatusIcons;
         private static ConfigEntry<bool> _autoAdjustProductionLimits;
+        private static ConfigEntry<bool> _autoAdjustPurgingFire;
         private static ConfigEntry<float> _autoAdjustMultiplier;
         private static ConfigEntry<float> _hudPositionX;
         private static ConfigEntry<float> _hudPositionY;
@@ -62,7 +63,13 @@ namespace StockAlert.Config
                 "Automation",
                 "AutoAdjustProductionLimits",
                 false,
-                "Automatically adjust global production limits based on the number of villagers that can consume each good."
+                "Automatically adjust global production limits for consumer goods based on the number of villagers that can consume each good."
+            );
+            _autoAdjustPurgingFire = _config.Bind(
+                "Automation",
+                "AutoAdjustPurgingFire",
+                false,
+                "Automatically set Purging Fire in blight posts to active cysts plus one."
             );
             _autoAdjustMultiplier = _config.Bind(
                 "Automation",
@@ -198,6 +205,21 @@ namespace StockAlert.Config
             {
                 Load();
                 _autoAdjustMultiplier.Value = NormalizeMultiplier(value);
+                _config.Save();
+            }
+        }
+
+        public static bool AutoAdjustPurgingFire
+        {
+            get
+            {
+                Load();
+                return _autoAdjustPurgingFire.Value;
+            }
+            set
+            {
+                Load();
+                _autoAdjustPurgingFire.Value = value;
                 _config.Save();
             }
         }

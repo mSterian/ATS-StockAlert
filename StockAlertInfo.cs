@@ -4,6 +4,6 @@ namespace StockAlert
     {
         public const string Id = "com.stockalert.ats";
         public const string Name = "StockAlert";
-        public const string Version = "1.0.8";
+        public const string Version = "1.0.9";
     }
 }

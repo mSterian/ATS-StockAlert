@@ -16,11 +16,13 @@ namespace StockAlert.Game
         private static PropertyInfo _piWorkshopsService;
         private static PropertyInfo _piVillagersService;
         private static PropertyInfo _piBuildingsService;
+        private static PropertyInfo _piBlightService;
         private static PropertyInfo _piIsGameActive;
         private static MethodInfo _miGetAmount;
         private static MethodInfo _miGetGlobalLimit;
         private static MethodInfo _miSetGlobalLimit;
         private static MethodInfo _miGetAliveRaceAmount;
+        private static MethodInfo _miGetGlobalActiveCysts;
         private static PropertyInfo _piWorkshopLimits;
         private static PropertyInfo _piWorkshops;
         private static PropertyInfo _piBlightPosts;
@@ -199,35 +201,14 @@ namespace StockAlert.Game
         {
             try
             {
-                if (_piBuildingsService == null)
-                {
-                    _piBuildingsService = typeof(GameMB).GetProperty("BuildingsService", BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
-                }
-
-                var buildingsService = _piBuildingsService?.GetValue(null, null);
+                var buildingsService = GetBuildingsService();
                 if (buildingsService == null)
                 {
                     return;
                 }
 
-                if (_piWorkshops == null)
-                {
-                    _piWorkshops = buildingsService.GetType().GetProperty("Workshops", BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
-                }
-
-                var workshops = _piWorkshops?.GetValue(buildingsService, null) as IDictionary;
-                if (workshops == null)
-                {
-                    return;
-                }
-
-                foreach (DictionaryEntry entry in workshops)
-                {
-                    if (entry.Value is Workshop workshop)
-                    {
-                        workshop.RefreshLimits();
-                    }
-                }
+                RefreshLimitsFromDictionary(buildingsService, "Workshops", ref _piWorkshops);
+                RefreshLimitsFromDictionary(buildingsService, "BlightPosts", ref _piBlightPosts);
             }
             catch (Exception)
             {
@@ -269,6 +250,46 @@ namespace StockAlert.Game
             catch (Exception)
             {
                 return 0;
+            }
+        }
+
+        public static int GetGlobalActiveCysts()
+        {
+            try
+            {
+                var blightService = GetBlightService();
+                if (blightService == null)
+                {
+                    return 0;
+                }
+
+                if (_miGetGlobalActiveCysts == null)
+                {
+                    _miGetGlobalActiveCysts = blightService.GetType().GetMethod("GetGlobalActiveCysts", Type.EmptyTypes);
+                }
+
+                if (_miGetGlobalActiveCysts == null)
+                {
+                    return 0;
+                }
+
+                return (int)_miGetGlobalActiveCysts.Invoke(blightService, null);
+            }
+            catch (Exception)
+            {
+                return 0;
+            }
+        }
+
+        public static string GetBlightPostFuelId()
+        {
+            try
+            {
+                return GetSettings()?.blightConfig?.blightPostFuel?.Name ?? string.Empty;
+            }
+            catch (Exception)
+            {
+                return string.Empty;
             }
         }
 
@@ -336,6 +357,16 @@ namespace StockAlert.Game
             return _piBuildingsService?.GetValue(null, null);
         }
 
+        private static object GetBlightService()
+        {
+            if (_piBlightService == null)
+            {
+                _piBlightService = typeof(GameMB).GetProperty("BlightService", BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
+            }
+
+            return _piBlightService?.GetValue(null, null);
+        }
+
         private static void AddRecipeGoodsFromDictionary(object buildingsService, string propertyName, ref PropertyInfo propertyInfo, HashSet<string> goods)
         {
             propertyInfo ??= buildingsService.GetType().GetProperty(propertyName, BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
@@ -374,6 +405,22 @@ namespace StockAlert.Game
                 {
                     workshops.Add(workshop);
                 }
+            }
+        }
+
+        private static void RefreshLimitsFromDictionary(object buildingsService, string propertyName, ref PropertyInfo propertyInfo)
+        {
+            propertyInfo ??= buildingsService.GetType().GetProperty(propertyName, BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
+            var entries = propertyInfo?.GetValue(buildingsService, null) as IDictionary;
+            if (entries == null)
+            {
+                return;
+            }
+
+            foreach (DictionaryEntry entry in entries)
+            {
+                var refreshMethod = entry.Value?.GetType().GetMethod("RefreshLimits", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+                refreshMethod?.Invoke(entry.Value, null);
             }
         }
     }

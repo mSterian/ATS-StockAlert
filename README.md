@@ -8,6 +8,8 @@ Displays goods that have a production limit set in the Recipes menu, and shows t
 
 It can also optionally auto-adjust production limits for all goods you currently have a recipe for, based on the number of people consuming them and an adjustable multiplier.
 
+It can also optionally auto-adjust the Purging Fire production limit in blight posts to the number of existing cysts plus one.
+
 It can also optionally highlight recipe buildings in the world when they have an enabled recipe for goods that are currently under threshold:
 - red when the building can help, but has no workers assigned
 - yellow when the building can help, has at least one worker, but is not fully staffed
@@ -19,7 +21,7 @@ Integrated Builder Icon mod made by ~DGH into my mod with some changes:
 
 Newly triggered shortages go at the top of the list.
 
-Options for movable, hideable, building indicators, builder status icons, and production limit multiplier are available in the `F8` settings window.
+Options for movable, hideable, building indicators, builder status icons, Purging Fire auto-adjust, and production limit multiplier are available in the `F8` settings window.
 
 If a good has no production limit, it is ignored by the mod.
 
@@ -29,8 +31,9 @@ If a good has no production limit, it is ignored by the mod.
 2. When your current stock drops below that limit, the good appears in the Stock Alert HUD.
 3. Press `F8` to edit the hide and movable HUD settings.
 4. Optional: enable auto-adjust in the `F8` window to make the mod set eligible global production limits for you.
-5. Optional: enable building shortage indicators in the `F8` window to spot where extra staffing would help with current shortages.
-6. Optional: enable builder status icons in the `F8` window to distinguish idle free builders from busy free builders.
+5. Optional: enable Purging Fire auto-adjust in the `F8` window to make blight posts keep that limit at `existing cysts + 1`.
+6. Optional: enable building shortage indicators in the `F8` window to spot where extra staffing would help with current shortages.
+7. Optional: enable builder status icons in the `F8` window to distinguish idle free builders from busy free builders.
 
 ## Auto-adjust option
 
@@ -40,6 +43,12 @@ If a good has no production limit, it is ignored by the mod.
 - values round up to the next whole number
 - only goods for recipes you currently have available in the settlement are adjusted
 - disabling the option stops further automatic changes, but does not restore previous manual limits
+
+## Purging Fire auto-adjust option
+
+- off by default
+- when enabled, the mod sets the Purging Fire production limit in blight posts to `existing cysts + 1`
+- disabling the option stops further automatic changes, but does not restore the previous manual limit
 
 ## Requirements
 

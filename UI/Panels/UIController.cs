@@ -136,6 +136,19 @@ namespace StockAlert.UI.Panels
                     }
                 }
 
+                var autoAdjustPurgingFire = GUILayout.Toggle(
+                    ConfigManager.AutoAdjustPurgingFire,
+                    "Auto-adjust Purging Fire to cysts + 1"
+                );
+                if (autoAdjustPurgingFire != ConfigManager.AutoAdjustPurgingFire)
+                {
+                    ConfigManager.AutoAdjustPurgingFire = autoAdjustPurgingFire;
+                    if (autoAdjustPurgingFire)
+                    {
+                        AutoProductionLimits.ApplyCurrentTargets();
+                    }
+                }
+
                 GUILayout.BeginHorizontal();
                 GUILayout.Label("Multiplier", GUILayout.Width(70f));
                 var nextInput = GUILayout.TextField(_multiplierInput ?? string.Empty, GUILayout.Width(60f));

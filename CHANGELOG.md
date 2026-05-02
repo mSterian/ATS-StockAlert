@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.9] - 2026-05-02
+
+### Added
+- Added an optional `F8` setting to auto-adjust the Purging Fire production limit in blight posts to `existing cysts + 1`.
+
+### Changed
+- The Purging Fire auto-adjust option is separate from the general consumer-based production limit automation and is off by default.
+
 ## [1.0.8] - 2026-05-01
 
 ### Added

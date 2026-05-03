@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.0] - 2026-05-04
+
+### Added
+- Added optional queued worker assignments for building worker slots.
+- You can now reserve a race for a slot even when no matching free villager is currently available.
+- Queued workers only auto-fill when the slot later becomes empty and a matching free villager becomes available.
+- Queued races appear as a second icon to the left of the normal worker slot icon, and can be changed or cleared from there.
+
+### Changed
+- Queued worker assignments are disabled by default.
+- When multiple slots are waiting for the same race, the oldest queue is filled first.
+- Queued worker assignments are session-only and do not persist across restarts.
+
 ## [1.0.9] - 2026-05-02
 
 ### Added

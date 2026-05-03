@@ -5,6 +5,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
 using Eremite.Buildings;
+using Eremite.Characters.Villagers;
 using System.Linq;
 
 namespace StockAlert.Game
@@ -23,6 +24,9 @@ namespace StockAlert.Game
         private static MethodInfo _miSetGlobalLimit;
         private static MethodInfo _miGetAliveRaceAmount;
         private static MethodInfo _miGetGlobalActiveCysts;
+        private static MethodInfo _miGetDefaultProfessionAmount;
+        private static MethodInfo _miGetDefaultProfessionVillager;
+        private static MethodInfo _miSetProfession;
         private static PropertyInfo _piWorkshopLimits;
         private static PropertyInfo _piWorkshops;
         private static PropertyInfo _piBlightPosts;
@@ -253,6 +257,94 @@ namespace StockAlert.Game
             }
         }
 
+        public static int GetDefaultProfessionAmount(string raceId)
+        {
+            if (string.IsNullOrWhiteSpace(raceId))
+            {
+                return 0;
+            }
+
+            try
+            {
+                var villagersService = GetVillagersService();
+                if (villagersService == null)
+                {
+                    return 0;
+                }
+
+                if (_miGetDefaultProfessionAmount == null)
+                {
+                    _miGetDefaultProfessionAmount = villagersService.GetType().GetMethod("GetDefaultProfessionAmount", new[] { typeof(string) });
+                }
+
+                if (_miGetDefaultProfessionAmount == null)
+                {
+                    return 0;
+                }
+
+                return (int)_miGetDefaultProfessionAmount.Invoke(villagersService, new object[] { raceId });
+            }
+            catch (Exception)
+            {
+                return 0;
+            }
+        }
+
+        public static Villager GetDefaultProfessionVillager(string raceId, ProductionBuilding building)
+        {
+            if (string.IsNullOrWhiteSpace(raceId) || building == null)
+            {
+                return null;
+            }
+
+            try
+            {
+                var villagersService = GetVillagersService();
+                if (villagersService == null)
+                {
+                    return null;
+                }
+
+                if (_miGetDefaultProfessionVillager == null)
+                {
+                    _miGetDefaultProfessionVillager = villagersService.GetType().GetMethod("GetDefaultProfessionVillager", new[] { typeof(string), typeof(ProductionBuilding) });
+                }
+
+                return _miGetDefaultProfessionVillager?.Invoke(villagersService, new object[] { raceId, building }) as Villager;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        public static void AssignVillagerToWorkplace(Villager villager, ProductionBuilding building, int workplaceIndex)
+        {
+            if (villager == null || building == null || workplaceIndex < 0)
+            {
+                return;
+            }
+
+            try
+            {
+                var villagersService = GetVillagersService();
+                if (villagersService == null)
+                {
+                    return;
+                }
+
+                if (_miSetProfession == null)
+                {
+                    _miSetProfession = villagersService.GetType().GetMethod("SetProfession", new[] { typeof(Villager), typeof(string), typeof(ProductionBuilding), typeof(int), typeof(bool) });
+                }
+
+                _miSetProfession?.Invoke(villagersService, new object[] { villager, building.Profession, building, workplaceIndex, true });
+            }
+            catch (Exception)
+            {
+            }
+        }
+
         public static int GetGlobalActiveCysts()
         {
             try
@@ -355,6 +447,16 @@ namespace StockAlert.Game
             }
 
             return _piBuildingsService?.GetValue(null, null);
+        }
+
+        private static object GetVillagersService()
+        {
+            if (_piVillagersService == null)
+            {
+                _piVillagersService = typeof(GameMB).GetProperty("VillagersService", BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
+            }
+
+            return _piVillagersService?.GetValue(null, null);
         }
 
         private static object GetBlightService()

@@ -15,6 +15,7 @@ namespace StockAlert.Config
         private static ConfigEntry<bool> _movableHud;
         private static ConfigEntry<bool> _showBuildingAlertIndicators;
         private static ConfigEntry<bool> _showBuilderStatusIcons;
+        private static ConfigEntry<bool> _enableQueuedWorkerAssignments;
         private static ConfigEntry<bool> _autoAdjustProductionLimits;
         private static ConfigEntry<bool> _autoAdjustPurgingFire;
         private static ConfigEntry<float> _autoAdjustMultiplier;
@@ -58,6 +59,12 @@ namespace StockAlert.Config
                 "ShowBuilderStatusIcons",
                 false,
                 "Show idle and working icons over free builder villagers."
+            );
+            _enableQueuedWorkerAssignments = _config.Bind(
+                "HUD",
+                "EnableQueuedWorkerAssignments",
+                false,
+                "Allow queuing a race for a worker slot so it auto-fills when a matching free villager becomes available."
             );
             _autoAdjustProductionLimits = _config.Bind(
                 "Automation",
@@ -190,6 +197,21 @@ namespace StockAlert.Config
             {
                 Load();
                 _autoAdjustProductionLimits.Value = value;
+                _config.Save();
+            }
+        }
+
+        public static bool EnableQueuedWorkerAssignments
+        {
+            get
+            {
+                Load();
+                return _enableQueuedWorkerAssignments.Value;
+            }
+            set
+            {
+                Load();
+                _enableQueuedWorkerAssignments.Value = value;
                 _config.Save();
             }
         }

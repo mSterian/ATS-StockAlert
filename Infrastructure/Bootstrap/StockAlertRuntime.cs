@@ -14,6 +14,7 @@ namespace StockAlert.Infrastructure.Bootstrap
         private float _nextRefreshTime;
         private float _nextAutoAdjustTime;
         private float _nextBuilderStatusRefreshTime;
+        private float _nextWorkerQueueRefreshTime;
 
         public static void Initialize()
         {
@@ -43,6 +44,7 @@ namespace StockAlert.Infrastructure.Bootstrap
             if (!GameAPI.IsGameActive())
             {
                 BuilderStatusIndicators.Clear();
+                WorkerAssignmentQueue.ClearAll();
                 return;
             }
 
@@ -59,7 +61,21 @@ namespace StockAlert.Infrastructure.Bootstrap
                 BuilderStatusIndicators.Refresh();
             }
 
-            if (!ConfigManager.AutoAdjustProductionLimits)
+            if (Time.unscaledTime >= _nextWorkerQueueRefreshTime)
+            {
+                _nextWorkerQueueRefreshTime = Time.unscaledTime + 0.5f;
+                if (ConfigManager.EnableQueuedWorkerAssignments)
+                {
+                    WorkerAssignmentQueue.Process();
+                }
+                else
+                {
+                    WorkerAssignmentQueue.ClearAll();
+                    QueuedWorkerSlotCompanion.ClearAll();
+                }
+            }
+
+            if (!ConfigManager.AutoAdjustProductionLimits && !ConfigManager.AutoAdjustPurgingFire)
             {
                 return;
             }

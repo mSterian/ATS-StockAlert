@@ -121,6 +121,20 @@ namespace StockAlert.UI.Panels
                     }
                 }
 
+                var queuedWorkerAssignments = GUILayout.Toggle(
+                    ConfigManager.EnableQueuedWorkerAssignments,
+                    "Queued worker assignments"
+                );
+                if (queuedWorkerAssignments != ConfigManager.EnableQueuedWorkerAssignments)
+                {
+                    ConfigManager.EnableQueuedWorkerAssignments = queuedWorkerAssignments;
+                    if (!queuedWorkerAssignments)
+                    {
+                        WorkerAssignmentQueue.ClearAll();
+                        QueuedWorkerSlotCompanion.ClearAll();
+                    }
+                }
+
                 GUILayout.Space(10f);
 
                 var autoAdjust = GUILayout.Toggle(

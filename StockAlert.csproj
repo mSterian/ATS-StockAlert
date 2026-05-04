@@ -43,6 +43,10 @@
       <HintPath>$(StormPath)\Against the Storm_Data\Managed\UnityEngine.IMGUIModule.dll</HintPath>
     </Reference>
 
+    <Reference Include="UnityEngine.TextRenderingModule">
+      <HintPath>$(StormPath)\Against the Storm_Data\Managed\UnityEngine.TextRenderingModule.dll</HintPath>
+    </Reference>
+
     <Reference Include="UnityEngine.UI">
       <HintPath>$(StormPath)\Against the Storm_Data\Managed\UnityEngine.UI.dll</HintPath>
     </Reference>

@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.UI;
 using StockAlert.Config;
 using StockAlert.Game;
 using StockAlert.Infrastructure.Plugin;
@@ -43,7 +44,22 @@ namespace StockAlert.UI.Panels
 
         private sealed class SettingsPanelBehaviour : MonoBehaviour
         {
-            private Rect _windowRect = new Rect(40f, 40f, 380f, 250f);
+            private static Texture2D _windowBackground;
+            private static Texture2D _panelBackground;
+            private static Texture2D _buttonBackground;
+            private static Texture2D _buttonHoverBackground;
+            private static Texture2D _fieldBackground;
+            private static Font _uiFont;
+            private static GUIStyle _windowStyle;
+            private static GUIStyle _titleStyle;
+            private static GUIStyle _bodyStyle;
+            private static GUIStyle _hintStyle;
+            private static GUIStyle _toggleStyle;
+            private static GUIStyle _buttonStyle;
+            private static GUIStyle _fieldStyle;
+            private static GUIStyle _sectionStyle;
+
+            private Rect _windowRect = new Rect(40f, 40f, 430f, 300f);
             private string _multiplierInput = "2.0";
 
             public bool Visible { get; private set; }
@@ -60,28 +76,35 @@ namespace StockAlert.UI.Panels
                     return;
                 }
 
+                EnsureStyles();
                 _windowRect = GUILayout.Window(
                     GetInstanceID(),
                     _windowRect,
                     DrawWindow,
-                    "Stock Alert Settings"
+                    GUIContent.none,
+                    _windowStyle
                 );
             }
 
             private void DrawWindow(int windowId)
             {
-                GUILayout.BeginVertical();
-                GUILayout.Label("Toggle key: " + ConfigManager.ToggleSettingsKey);
-                GUILayout.Label("Use these settings to control the HUD and optional production automation.");
-                GUILayout.Space(8f);
+                var titleRect = new Rect(20f, 12f, _windowRect.width - 40f, 28f);
+                GUI.Label(titleRect, "Stock Alert Settings", _titleStyle);
+                GUI.Box(new Rect(18f, 44f, _windowRect.width - 36f, 1f), GUIContent.none, _sectionStyle);
 
-                var showHud = GUILayout.Toggle(ConfigManager.ShowHud, "Show HUD");
+                GUILayout.Space(36f);
+                GUILayout.BeginVertical();
+                GUILayout.Label("Toggle key: " + ConfigManager.ToggleSettingsKey, _bodyStyle);
+                GUILayout.Label("Use these settings to control the HUD and optional production automation.", _hintStyle);
+                GUILayout.Space(12f);
+
+                var showHud = GUILayout.Toggle(ConfigManager.ShowHud, "Show HUD", _toggleStyle);
                 if (showHud != ConfigManager.ShowHud)
                 {
                     ConfigManager.ShowHud = showHud;
                 }
 
-                var movableHud = GUILayout.Toggle(ConfigManager.MovableHud, "Movable HUD");
+                var movableHud = GUILayout.Toggle(ConfigManager.MovableHud, "Movable HUD", _toggleStyle);
                 if (movableHud != ConfigManager.MovableHud)
                 {
                     ConfigManager.MovableHud = movableHud;
@@ -89,7 +112,8 @@ namespace StockAlert.UI.Panels
 
                 var buildingIndicators = GUILayout.Toggle(
                     ConfigManager.ShowBuildingAlertIndicators,
-                    "Building shortage indicators"
+                    "Building shortage indicators",
+                    _toggleStyle
                 );
                 if (buildingIndicators != ConfigManager.ShowBuildingAlertIndicators)
                 {
@@ -106,7 +130,8 @@ namespace StockAlert.UI.Panels
 
                 var builderStatusIcons = GUILayout.Toggle(
                     ConfigManager.ShowBuilderStatusIcons,
-                    "Builder status icons"
+                    "Builder status icons",
+                    _toggleStyle
                 );
                 if (builderStatusIcons != ConfigManager.ShowBuilderStatusIcons)
                 {
@@ -121,9 +146,24 @@ namespace StockAlert.UI.Panels
                     }
                 }
 
+                var idleBuildersAlert = GUILayout.Toggle(
+                    ConfigManager.ShowIdleBuildersAlert,
+                    "Idle builders alert",
+                    _toggleStyle
+                );
+                if (idleBuildersAlert != ConfigManager.ShowIdleBuildersAlert)
+                {
+                    ConfigManager.ShowIdleBuildersAlert = idleBuildersAlert;
+                    if (!idleBuildersAlert)
+                    {
+                        IdleBuildersAlert.Clear();
+                    }
+                }
+
                 var queuedWorkerAssignments = GUILayout.Toggle(
                     ConfigManager.EnableQueuedWorkerAssignments,
-                    "Queued worker assignments"
+                    "Queued worker assignments",
+                    _toggleStyle
                 );
                 if (queuedWorkerAssignments != ConfigManager.EnableQueuedWorkerAssignments)
                 {
@@ -135,11 +175,22 @@ namespace StockAlert.UI.Panels
                     }
                 }
 
+                var seasonEndingTradeRoutesAlert = GUILayout.Toggle(
+                    ConfigManager.SeasonEndingTradeRoutesAlert,
+                    "Season ending trade routes alert",
+                    _toggleStyle
+                );
+                if (seasonEndingTradeRoutesAlert != ConfigManager.SeasonEndingTradeRoutesAlert)
+                {
+                    ConfigManager.SeasonEndingTradeRoutesAlert = seasonEndingTradeRoutesAlert;
+                }
+
                 GUILayout.Space(10f);
 
                 var autoAdjust = GUILayout.Toggle(
                     ConfigManager.AutoAdjustProductionLimits,
-                    "Auto-adjust production limits from consumers"
+                    "Auto-adjust production limits from consumers",
+                    _toggleStyle
                 );
                 if (autoAdjust != ConfigManager.AutoAdjustProductionLimits)
                 {
@@ -150,22 +201,11 @@ namespace StockAlert.UI.Panels
                     }
                 }
 
-                var autoAdjustPurgingFire = GUILayout.Toggle(
-                    ConfigManager.AutoAdjustPurgingFire,
-                    "Auto-adjust Purging Fire to cysts + 1"
-                );
-                if (autoAdjustPurgingFire != ConfigManager.AutoAdjustPurgingFire)
-                {
-                    ConfigManager.AutoAdjustPurgingFire = autoAdjustPurgingFire;
-                    if (autoAdjustPurgingFire)
-                    {
-                        AutoProductionLimits.ApplyCurrentTargets();
-                    }
-                }
-
                 GUILayout.BeginHorizontal();
-                GUILayout.Label("Multiplier", GUILayout.Width(70f));
-                var nextInput = GUILayout.TextField(_multiplierInput ?? string.Empty, GUILayout.Width(60f));
+                GUILayout.Space(20f);
+                GUILayout.BeginHorizontal();
+                GUILayout.Label("Consumer multiplier", _bodyStyle, GUILayout.Width(140f));
+                var nextInput = GUILayout.TextField(_multiplierInput ?? string.Empty, _fieldStyle, GUILayout.Width(64f));
                 if (nextInput != _multiplierInput)
                 {
                     _multiplierInput = nextInput;
@@ -179,11 +219,29 @@ namespace StockAlert.UI.Panels
                         }
                     }
                 }
-                GUILayout.Label("(1.0 - 9.0)");
+                GUILayout.Label("(1.0 - 9.0)", _hintStyle);
+                GUILayout.EndHorizontal();
+                GUILayout.FlexibleSpace();
                 GUILayout.EndHorizontal();
 
-                GUILayout.Space(8f);
-                if (GUILayout.Button("Close"))
+                GUILayout.Space(4f);
+
+                var autoAdjustPurgingFire = GUILayout.Toggle(
+                    ConfigManager.AutoAdjustPurgingFire,
+                    "Auto-adjust Purging Fire to cysts + 1",
+                    _toggleStyle
+                );
+                if (autoAdjustPurgingFire != ConfigManager.AutoAdjustPurgingFire)
+                {
+                    ConfigManager.AutoAdjustPurgingFire = autoAdjustPurgingFire;
+                    if (autoAdjustPurgingFire)
+                    {
+                        AutoProductionLimits.ApplyCurrentTargets();
+                    }
+                }
+
+                GUILayout.Space(12f);
+                if (GUILayout.Button("Close", _buttonStyle, GUILayout.Height(28f)))
                 {
                     Visible = false;
                 }
@@ -195,6 +253,174 @@ namespace StockAlert.UI.Panels
             public void RefreshInputs()
             {
                 _multiplierInput = ConfigManager.AutoAdjustMultiplier.ToString("0.0");
+            }
+
+            private static void EnsureStyles()
+            {
+                if (_windowStyle != null)
+                {
+                    return;
+                }
+
+                _windowBackground = MakeTexture(new Color32(24, 26, 28, 235), new Color32(112, 90, 56, 255));
+                _panelBackground = MakeTexture(new Color32(34, 37, 40, 210), new Color32(72, 60, 42, 255));
+                _buttonBackground = MakeTexture(new Color32(70, 56, 37, 235), new Color32(145, 116, 66, 255));
+                _buttonHoverBackground = MakeTexture(new Color32(96, 73, 44, 245), new Color32(182, 146, 82, 255));
+                _fieldBackground = MakeTexture(new Color32(28, 30, 33, 240), new Color32(114, 97, 63, 255));
+                _uiFont = ResolveUIFont();
+
+                _windowStyle = new GUIStyle(GUI.skin.window)
+                {
+                    border = new RectOffset(3, 3, 3, 3),
+                    padding = new RectOffset(14, 14, 12, 12)
+                };
+                _windowStyle.normal.background = _windowBackground;
+                _windowStyle.hover.background = _windowBackground;
+                _windowStyle.onNormal.background = _windowBackground;
+                _windowStyle.onHover.background = _windowBackground;
+                _windowStyle.active.background = _windowBackground;
+                _windowStyle.onActive.background = _windowBackground;
+                _windowStyle.focused.background = _windowBackground;
+                _windowStyle.onFocused.background = _windowBackground;
+                _windowStyle.normal.textColor = new Color32(0, 0, 0, 0);
+                _windowStyle.hover.textColor = new Color32(0, 0, 0, 0);
+                _windowStyle.onNormal.textColor = new Color32(0, 0, 0, 0);
+                _windowStyle.onHover.textColor = new Color32(0, 0, 0, 0);
+                _windowStyle.active.textColor = new Color32(0, 0, 0, 0);
+                _windowStyle.onActive.textColor = new Color32(0, 0, 0, 0);
+                _windowStyle.focused.textColor = new Color32(0, 0, 0, 0);
+                _windowStyle.onFocused.textColor = new Color32(0, 0, 0, 0);
+
+                _titleStyle = new GUIStyle(GUI.skin.label)
+                {
+                    font = _uiFont,
+                    fontSize = 16,
+                    richText = true,
+                    normal = { textColor = new Color32(222, 196, 132, 255) }
+                };
+
+                _bodyStyle = new GUIStyle(GUI.skin.label)
+                {
+                    font = _uiFont,
+                    fontSize = 13,
+                    wordWrap = true,
+                    normal = { textColor = new Color32(220, 216, 204, 255) }
+                };
+
+                _hintStyle = new GUIStyle(_bodyStyle)
+                {
+                    fontSize = 12,
+                    normal = { textColor = new Color32(176, 170, 156, 255) }
+                };
+
+                _toggleStyle = new GUIStyle(GUI.skin.toggle)
+                {
+                    font = _uiFont,
+                    fontSize = 13,
+                    margin = new RectOffset(4, 4, 2, 2),
+                    padding = new RectOffset(20, 4, 2, 2),
+                    normal = { textColor = new Color32(226, 221, 210, 255) },
+                    onNormal = { textColor = new Color32(236, 228, 214, 255) },
+                    hover = { textColor = new Color32(245, 235, 216, 255) },
+                    onHover = { textColor = new Color32(245, 235, 216, 255) }
+                };
+
+                _buttonStyle = new GUIStyle(GUI.skin.button)
+                {
+                    font = _uiFont,
+                    fontSize = 13,
+                    normal =
+                    {
+                        background = _buttonBackground,
+                        textColor = new Color32(241, 231, 207, 255)
+                    },
+                    hover =
+                    {
+                        background = _buttonHoverBackground,
+                        textColor = new Color32(255, 245, 221, 255)
+                    },
+                    active =
+                    {
+                        background = _buttonBackground,
+                        textColor = new Color32(228, 215, 188, 255)
+                    },
+                    border = new RectOffset(3, 3, 3, 3)
+                };
+
+                _fieldStyle = new GUIStyle(GUI.skin.textField)
+                {
+                    font = _uiFont,
+                    fontSize = 13,
+                    normal =
+                    {
+                        background = _fieldBackground,
+                        textColor = new Color32(235, 229, 216, 255)
+                    },
+                    focused =
+                    {
+                        background = _fieldBackground,
+                        textColor = new Color32(248, 240, 223, 255)
+                    },
+                    border = new RectOffset(3, 3, 3, 3)
+                };
+
+                _sectionStyle = new GUIStyle(GUI.skin.box)
+                {
+                    normal = { background = _panelBackground },
+                    border = new RectOffset(1, 1, 1, 1),
+                    margin = new RectOffset(0, 0, 0, 0),
+                    padding = new RectOffset(0, 0, 0, 0)
+                };
+            }
+
+            private static Texture2D MakeTexture(Color32 fill, Color32 border)
+            {
+                var texture = new Texture2D(8, 8, TextureFormat.ARGB32, false)
+                {
+                    wrapMode = TextureWrapMode.Clamp,
+                    filterMode = FilterMode.Bilinear,
+                    hideFlags = HideFlags.HideAndDontSave
+                };
+
+                var pixels = new Color32[64];
+                for (var y = 0; y < 8; y++)
+                {
+                    for (var x = 0; x < 8; x++)
+                    {
+                        var isBorder = x == 0 || x == 7 || y == 0 || y == 7;
+                        pixels[(y * 8) + x] = isBorder ? border : fill;
+                    }
+                }
+
+                texture.SetPixels32(pixels);
+                texture.Apply(false, true);
+                return texture;
+            }
+
+            private static Font ResolveUIFont()
+            {
+                try
+                {
+                    foreach (var text in Resources.FindObjectsOfTypeAll<Text>())
+                    {
+                        if (text != null && text.font != null)
+                        {
+                            return text.font;
+                        }
+                    }
+                }
+                catch
+                {
+                }
+
+                try
+                {
+                    return Resources.GetBuiltinResource<Font>("Arial.ttf");
+                }
+                catch
+                {
+                    return GUI.skin?.font;
+                }
             }
 
             private static bool TryParseMultiplier(string raw, out float value)

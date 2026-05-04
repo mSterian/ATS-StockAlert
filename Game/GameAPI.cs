@@ -1,5 +1,7 @@
 using Eremite;
 using Eremite.Model;
+using Eremite.Model.State;
+using Eremite.Services.Monitors;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -19,6 +21,9 @@ namespace StockAlert.Game
         private static PropertyInfo _piBuildingsService;
         private static PropertyInfo _piBlightService;
         private static PropertyInfo _piIsGameActive;
+        private static PropertyInfo _piCalendarService;
+        private static PropertyInfo _piTimeScaleService;
+        private static PropertyInfo _piNewsService;
         private static MethodInfo _miGetAmount;
         private static MethodInfo _miGetGlobalLimit;
         private static MethodInfo _miSetGlobalLimit;
@@ -27,9 +32,15 @@ namespace StockAlert.Game
         private static MethodInfo _miGetDefaultProfessionAmount;
         private static MethodInfo _miGetDefaultProfessionVillager;
         private static MethodInfo _miSetProfession;
+        private static MethodInfo _miGetTimeTillNextSeasonChange;
+        private static MethodInfo _miPause;
+        private static MethodInfo _miPublishNews;
+        private static MethodInfo _miRemoveNews;
         private static PropertyInfo _piWorkshopLimits;
         private static PropertyInfo _piWorkshops;
         private static PropertyInfo _piBlightPosts;
+        private static FieldInfo _fiCurrentNews;
+        private static PropertyInfo _piReactiveValue;
 
         public static Settings GetSettings()
         {
@@ -373,6 +384,162 @@ namespace StockAlert.Game
             }
         }
 
+        public static float GetTimeTillNextSeasonChange()
+        {
+            try
+            {
+                var calendarService = GetCalendarService();
+                if (calendarService == null)
+                {
+                    return float.MaxValue;
+                }
+
+                if (_miGetTimeTillNextSeasonChange == null)
+                {
+                    _miGetTimeTillNextSeasonChange = calendarService.GetType().GetMethod("GetTimeTillNextSeasonChange", Type.EmptyTypes);
+                }
+
+                if (_miGetTimeTillNextSeasonChange == null)
+                {
+                    return float.MaxValue;
+                }
+
+                return (float)_miGetTimeTillNextSeasonChange.Invoke(calendarService, null);
+            }
+            catch (Exception)
+            {
+                return float.MaxValue;
+            }
+        }
+
+        public static GameDate GetCurrentGameDate()
+        {
+            try
+            {
+                var calendarService = GetCalendarService();
+                var prop = calendarService?.GetType().GetProperty("GameDate", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+                return prop?.GetValue(calendarService, null) is GameDate date ? date : default;
+            }
+            catch (Exception)
+            {
+                return default;
+            }
+        }
+
+        public static void PauseGame()
+        {
+            try
+            {
+                var timeScaleService = GetTimeScaleService();
+                if (timeScaleService == null)
+                {
+                    return;
+                }
+
+                var isPausedMethod = timeScaleService.GetType().GetMethod("IsPaused", Type.EmptyTypes);
+                if (isPausedMethod?.Invoke(timeScaleService, null) is bool isPaused && isPaused)
+                {
+                    return;
+                }
+
+                if (_miPause == null)
+                {
+                    _miPause = timeScaleService.GetType().GetMethod("Pause", new[] { typeof(bool) });
+                }
+
+                _miPause?.Invoke(timeScaleService, new object[] { false });
+            }
+            catch (Exception)
+            {
+            }
+        }
+
+        public static News PublishNews(string content, string description = null, AlertSeverity severity = AlertSeverity.Info)
+        {
+            if (string.IsNullOrWhiteSpace(content))
+            {
+                return null;
+            }
+
+            try
+            {
+                var newsService = GetNewsService();
+                if (newsService == null)
+                {
+                    return null;
+                }
+
+                var before = new HashSet<News>(GetCurrentNews());
+                if (_miPublishNews == null)
+                {
+                    _miPublishNews = newsService.GetType().GetMethod(
+                        "PublishNews",
+                        new[] { typeof(string), typeof(string), typeof(AlertSeverity), typeof(UnityEngine.Sprite), typeof(Eremite.IBroadcaster) }
+                    );
+                }
+
+                _miPublishNews?.Invoke(newsService, new object[] { content, description, severity, null, null });
+                return GetCurrentNews().FirstOrDefault(news => news != null && !before.Contains(news) && news.content == content);
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        public static void RemoveNews(News news)
+        {
+            if (news == null)
+            {
+                return;
+            }
+
+            try
+            {
+                var newsService = GetNewsService();
+                if (newsService == null)
+                {
+                    return;
+                }
+
+                if (_miRemoveNews == null)
+                {
+                    _miRemoveNews = newsService.GetType().GetMethod("RemoveNews", new[] { typeof(News) });
+                }
+
+                _miRemoveNews?.Invoke(newsService, new object[] { news });
+            }
+            catch (Exception)
+            {
+            }
+        }
+
+        public static List<News> GetCurrentNews()
+        {
+            try
+            {
+                var newsService = GetNewsService();
+                if (newsService == null)
+                {
+                    return new List<News>();
+                }
+
+                _fiCurrentNews ??= newsService.GetType().GetField("currentNews", BindingFlags.Instance | BindingFlags.NonPublic);
+                var reactiveProperty = _fiCurrentNews?.GetValue(newsService);
+                if (reactiveProperty == null)
+                {
+                    return new List<News>();
+                }
+
+                _piReactiveValue ??= reactiveProperty.GetType().GetProperty("Value", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+                return _piReactiveValue?.GetValue(reactiveProperty, null) as List<News> ?? new List<News>();
+            }
+            catch (Exception)
+            {
+                return new List<News>();
+            }
+        }
+
         public static string GetBlightPostFuelId()
         {
             try
@@ -467,6 +634,36 @@ namespace StockAlert.Game
             }
 
             return _piBlightService?.GetValue(null, null);
+        }
+
+        private static object GetCalendarService()
+        {
+            if (_piCalendarService == null)
+            {
+                _piCalendarService = typeof(GameMB).GetProperty("CalendarService", BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
+            }
+
+            return _piCalendarService?.GetValue(null, null);
+        }
+
+        private static object GetTimeScaleService()
+        {
+            if (_piTimeScaleService == null)
+            {
+                _piTimeScaleService = typeof(GameMB).GetProperty("TimeScaleService", BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
+            }
+
+            return _piTimeScaleService?.GetValue(null, null);
+        }
+
+        private static object GetNewsService()
+        {
+            if (_piNewsService == null)
+            {
+                _piNewsService = typeof(GameMB).GetProperty("NewsService", BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
+            }
+
+            return _piNewsService?.GetValue(null, null);
         }
 
         private static void AddRecipeGoodsFromDictionary(object buildingsService, string propertyName, ref PropertyInfo propertyInfo, HashSet<string> goods)

@@ -15,7 +15,9 @@ namespace StockAlert.Config
         private static ConfigEntry<bool> _movableHud;
         private static ConfigEntry<bool> _showBuildingAlertIndicators;
         private static ConfigEntry<bool> _showBuilderStatusIcons;
+        private static ConfigEntry<bool> _showIdleBuildersAlert;
         private static ConfigEntry<bool> _enableQueuedWorkerAssignments;
+        private static ConfigEntry<bool> _seasonEndingTradeRoutesAlert;
         private static ConfigEntry<bool> _autoAdjustProductionLimits;
         private static ConfigEntry<bool> _autoAdjustPurgingFire;
         private static ConfigEntry<float> _autoAdjustMultiplier;
@@ -60,11 +62,23 @@ namespace StockAlert.Config
                 false,
                 "Show idle and working icons over free builder villagers."
             );
+            _showIdleBuildersAlert = _config.Bind(
+                "HUD",
+                "ShowIdleBuildersAlert",
+                false,
+                "Show a persistent alert while you have idle builders."
+            );
             _enableQueuedWorkerAssignments = _config.Bind(
                 "HUD",
                 "EnableQueuedWorkerAssignments",
                 false,
                 "Allow queuing a race for a worker slot so it auto-fills when a matching free villager becomes available."
+            );
+            _seasonEndingTradeRoutesAlert = _config.Bind(
+                "HUD",
+                "SeasonEndingTradeRoutesAlert",
+                false,
+                "Pause 3 seconds before season end and show a reminder to check trade routes."
             );
             _autoAdjustProductionLimits = _config.Bind(
                 "Automation",
@@ -186,6 +200,21 @@ namespace StockAlert.Config
             }
         }
 
+        public static bool ShowIdleBuildersAlert
+        {
+            get
+            {
+                Load();
+                return _showIdleBuildersAlert.Value;
+            }
+            set
+            {
+                Load();
+                _showIdleBuildersAlert.Value = value;
+                _config.Save();
+            }
+        }
+
         public static bool AutoAdjustProductionLimits
         {
             get
@@ -212,6 +241,21 @@ namespace StockAlert.Config
             {
                 Load();
                 _enableQueuedWorkerAssignments.Value = value;
+                _config.Save();
+            }
+        }
+
+        public static bool SeasonEndingTradeRoutesAlert
+        {
+            get
+            {
+                Load();
+                return _seasonEndingTradeRoutesAlert.Value;
+            }
+            set
+            {
+                Load();
+                _seasonEndingTradeRoutesAlert.Value = value;
                 _config.Save();
             }
         }

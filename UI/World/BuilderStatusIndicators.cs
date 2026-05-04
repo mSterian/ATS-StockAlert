@@ -86,6 +86,11 @@ namespace StockAlert.UI.World
             ActiveIndicators.Clear();
         }
 
+        public static int GetIdleBuilderCount()
+        {
+            return GetBuilderVillagers().Count(villager => villager != null && villager.IsAlive() && IsVillagerIdle(villager));
+        }
+
         private static IEnumerable<Villager> GetBuilderVillagers()
         {
             var settings = GameAPI.GetSettings();

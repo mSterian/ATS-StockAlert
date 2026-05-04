@@ -12,6 +12,10 @@ It can also optionally auto-adjust the Purging Fire production limit in blight p
 
 It can also optionally queue a chosen race for a worker slot, so the slot auto-fills the next time it becomes empty and a matching free villager becomes available.
 
+-possibly fixed Options Menu text display issue on Linux/Proton and improved overall window visibility and design
+-added optional alert for idle builders that auto updates with the count of idle builders
+-added optional alert+pause 3 seconds before season ends to check if you have a trade route you still want to start before it changes
+
 It can also optionally highlight recipe buildings in the world when they have an enabled recipe for goods that are currently under threshold:
 - red when the building can help, but has no workers assigned
 - yellow when the building can help, has at least one worker, but is not fully staffed
@@ -23,7 +27,7 @@ Integrated Builder Icon mod made by ~DGH into my mod with some changes:
 
 Newly triggered shortages go at the top of the list.
 
-Options for movable, hideable, building indicators, builder status icons, queued worker assignments, Purging Fire auto-adjust, and production limit multiplier are available in the `F8` settings window.
+Options for movable, hideable, building indicators, builder status icons, idle builders alert, queued worker assignments, season ending trade routes alert, Purging Fire auto-adjust, and production limit multiplier are available in the `F8` settings window.
 
 If a good has no production limit, it is ignored by the mod.
 

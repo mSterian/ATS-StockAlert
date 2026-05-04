@@ -16,6 +16,7 @@ namespace StockAlert.Core.Models
         public int CurrentAmount;      // Updated every frame
         public int Threshold;          // User-defined threshold
         public bool Enabled;           // Whether alerts are active
+        public bool IsIngredientBlocked; // True when highest-star enabled recipe cannot continue due to ingredients
 
         public bool IsBelowThreshold => Enabled && CurrentAmount < Threshold;
     }

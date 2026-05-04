@@ -36,6 +36,7 @@ namespace StockAlert.UI.HUD
             private const float ColumnGap = 12f;
 
             private GUIStyle _lineStyle;
+            private GUIStyle _blockedLineStyle;
             private GUIStyle _boxStyle;
             private readonly HashSet<string> _activeAlertIds = new HashSet<string>();
             private readonly Dictionary<string, long> _alertOrder = new Dictionary<string, long>();
@@ -119,6 +120,9 @@ namespace StockAlert.UI.HUD
                     fontSize = 16
                 };
 
+                _blockedLineStyle ??= new GUIStyle(_lineStyle);
+                _blockedLineStyle.normal.textColor = new Color(1f, 0.45f, 0.45f, 1f);
+
                 _boxStyle ??= new GUIStyle(GUI.skin.box)
                 {
                     padding = new RectOffset(10, 10, 8, 8)
@@ -191,14 +195,23 @@ namespace StockAlert.UI.HUD
                         good.Icon.textureRect.width / good.Icon.texture.width,
                         good.Icon.textureRect.height / good.Icon.texture.height
                     );
+                    var previousColor = GUI.color;
+                    if (good.IsIngredientBlocked)
+                    {
+                        GUI.color = new Color(1f, 0.55f, 0.55f, 1f);
+                    }
                     GUI.DrawTextureWithTexCoords(rect, good.Icon.texture, uv);
+                    GUI.color = previousColor;
                 }
                 else
                 {
                     GUILayout.Label(string.Empty, GUILayout.Width(IconSize), GUILayout.Height(IconSize));
                 }
 
-                GUILayout.Label($"{good.DisplayName}: {good.CurrentAmount}/{good.Threshold}", _lineStyle);
+                GUILayout.Label(
+                    $"{good.DisplayName}: {good.CurrentAmount}/{good.Threshold}",
+                    good.IsIngredientBlocked ? _blockedLineStyle : _lineStyle
+                );
                 GUILayout.EndHorizontal();
             }
 

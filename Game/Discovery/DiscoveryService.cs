@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
+using Eremite.Buildings;
 using Eremite.Model;
 using StockAlert.Config;
 using StockAlert.Core.Models;
@@ -118,6 +120,154 @@ namespace StockAlert.Game.Discovery
                 }
 
                 good.CurrentAmount = GameAPI.GetStoredAmount(good.Model, good.Id);
+            }
+
+            UpdateIngredientWarnings();
+        }
+
+        private static void UpdateIngredientWarnings()
+        {
+            var settings = GameAPI.GetSettings();
+            if (settings == null)
+            {
+                ClearIngredientWarnings();
+                return;
+            }
+
+            var visibleGoods = Goods.Where(g => g.IsBelowThreshold).ToList();
+            if (visibleGoods.Count == 0)
+            {
+                ClearIngredientWarnings();
+                return;
+            }
+
+            var availableGlobalAmounts = Goods.ToDictionary(g => g.Id, g => g.CurrentAmount, StringComparer.OrdinalIgnoreCase);
+            var bestGradeByGood = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            var canContinueAtBestGrade = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
+            var visibleGoodIds = new HashSet<string>(visibleGoods.Select(g => g.Id), StringComparer.OrdinalIgnoreCase);
+
+            foreach (var workshop in GameAPI.GetRecipeBuildings())
+            {
+                if (workshop?.Recipes == null)
+                {
+                    continue;
+                }
+
+                foreach (var recipeState in workshop.Recipes)
+                {
+                    if (recipeState == null || !recipeState.active)
+                    {
+                        continue;
+                    }
+
+                    var recipeModel = settings.GetWorkshopRecipe(recipeState.model);
+                    if (recipeModel == null || string.IsNullOrWhiteSpace(recipeModel.producedGood?.Name))
+                    {
+                        continue;
+                    }
+
+                    var productId = recipeModel.producedGood.Name;
+                    if (!visibleGoodIds.Contains(productId))
+                    {
+                        continue;
+                    }
+
+                    var gradeLevel = recipeModel.grade?.level ?? 0;
+                    var canContinue = CanRecipeContinue(workshop, recipeModel, availableGlobalAmounts);
+
+                    if (!bestGradeByGood.TryGetValue(productId, out var currentBestGrade) || gradeLevel > currentBestGrade)
+                    {
+                        bestGradeByGood[productId] = gradeLevel;
+                        canContinueAtBestGrade[productId] = canContinue;
+                    }
+                    else if (gradeLevel == currentBestGrade)
+                    {
+                        canContinueAtBestGrade[productId] = canContinueAtBestGrade[productId] || canContinue;
+                    }
+                }
+            }
+
+            foreach (var good in Goods)
+            {
+                good.IsIngredientBlocked = good.IsBelowThreshold
+                    && bestGradeByGood.ContainsKey(good.Id)
+                    && canContinueAtBestGrade.TryGetValue(good.Id, out var canContinue)
+                    && !canContinue;
+            }
+        }
+
+        private static bool CanRecipeContinue(IWorkshop workshop, WorkshopRecipeModel recipeModel, IReadOnlyDictionary<string, int> globalAmounts)
+        {
+            if (recipeModel?.requiredGoods == null || recipeModel.requiredGoods.Length == 0)
+            {
+                return true;
+            }
+
+            var availableAmounts = globalAmounts.ToDictionary(pair => pair.Key, pair => pair.Value, StringComparer.OrdinalIgnoreCase);
+            var localIngredients = workshop?.IngredientsStorage?.goods?.goods;
+            if (localIngredients != null)
+            {
+                foreach (var pair in localIngredients)
+                {
+                    if (pair.Value <= 0)
+                    {
+                        continue;
+                    }
+
+                    availableAmounts[pair.Key] = availableAmounts.TryGetValue(pair.Key, out var current)
+                        ? current + pair.Value
+                        : pair.Value;
+                }
+            }
+
+            return CanSatisfyIngredientSets(recipeModel.requiredGoods, 0, availableAmounts);
+        }
+
+        private static bool CanSatisfyIngredientSets(GoodsSet[] ingredientSets, int setIndex, Dictionary<string, int> availableAmounts)
+        {
+            if (ingredientSets == null || setIndex >= ingredientSets.Length)
+            {
+                return true;
+            }
+
+            var set = ingredientSets[setIndex];
+            if (set?.goods == null || set.goods.Length == 0)
+            {
+                return CanSatisfyIngredientSets(ingredientSets, setIndex + 1, availableAmounts);
+            }
+
+            foreach (var ingredient in set.goods)
+            {
+                if (ingredient?.good == null)
+                {
+                    continue;
+                }
+
+                var ingredientId = ingredient.good.Name;
+                var requiredAmount = ingredient.amount;
+                if (!availableAmounts.TryGetValue(ingredientId, out var currentAmount) || currentAmount < requiredAmount)
+                {
+                    continue;
+                }
+
+                availableAmounts[ingredientId] = currentAmount - requiredAmount;
+                if (CanSatisfyIngredientSets(ingredientSets, setIndex + 1, availableAmounts))
+                {
+                    availableAmounts[ingredientId] = currentAmount;
+                    return true;
+                }
+
+                availableAmounts[ingredientId] = currentAmount;
+            }
+
+            return false;
+        }
+
+        private static void ClearIngredientWarnings()
+        {
+            foreach (var good in Goods)
+            {
+                good.IsIngredientBlocked = false;
             }
         }
     }

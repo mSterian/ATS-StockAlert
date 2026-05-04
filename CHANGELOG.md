@@ -2,12 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.2] - 2026-05-05
+
+### Added
+- Stock below production limit that cannot be produced further (after current in-progress productions), are now marked in red.
+
 ## [1.1.1] - 2026-05-04
 
 ### Changed
--possibly fixed Options Menu text display issue on Linux/Proton and improved overall window visibility and design
--added optional alert for idle builders that auto updates with the count of idle builders
--added optional alert+pause 3 seconds before season ends to check if you have a trade route you still want to start before it changes
+- possibly fixed Options Menu text display issue on Linux/Proton and improved overall window visibility and design
+- added optional alert for idle builders that auto updates with the count of idle builders
+- added optional alert+pause 3 seconds before season ends to check if you have a trade route you still want to start before it changes
 
 ## [1.1.0] - 2026-05-04
 

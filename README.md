@@ -6,15 +6,17 @@
 
 Displays goods that have a production limit set in the Recipes menu, and shows their current/max stock in a compact, movable, hideable HUD in the bottom-right corner.
 
+Stock below production limit that cannot be produced further (after current in-progress productions), are now marked in red.
+
 It can also optionally auto-adjust production limits for all goods you currently have a recipe for, based on the number of people consuming them and an adjustable multiplier.
 
 It can also optionally auto-adjust the Purging Fire production limit in blight posts to the number of existing cysts plus one.
 
 It can also optionally queue a chosen race for a worker slot, so the slot auto-fills the next time it becomes empty and a matching free villager becomes available.
 
--possibly fixed Options Menu text display issue on Linux/Proton and improved overall window visibility and design
--added optional alert for idle builders that auto updates with the count of idle builders
--added optional alert+pause 3 seconds before season ends to check if you have a trade route you still want to start before it changes
+- possibly fixed Options Menu text display issue on Linux/Proton and improved overall window visibility and design
+- added optional alert for idle builders that auto updates with the count of idle builders
+- added optional alert+pause 3 seconds before season ends to check if you have a trade route you still want to start before it changes
 
 It can also optionally highlight recipe buildings in the world when they have an enabled recipe for goods that are currently under threshold:
 - red when the building can help, but has no workers assigned

@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.4] - 2026-05-07
+
+### Fixed
+- Fixed the building icons indicating buildings without workers for goods below threshold to no longer be interactible.
+
 ## [1.1.3] - 2026-05-06
 
 ### Changed

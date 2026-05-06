@@ -6,6 +6,8 @@ using StockAlert.Config;
 using StockAlert.Game;
 using StockAlert.Game.Discovery;
 using UnityEngine;
+using UnityEngine.EventSystems;
+using UnityEngine.UI;
 
 namespace StockAlert.UI.World
 {
@@ -67,6 +69,7 @@ namespace StockAlert.UI.World
                     continue;
                 }
 
+                MakeIconClickThrough(icon);
                 var active = building.BuildingState != null &&
                              building.BuildingState.finished &&
                              !building.BuildingState.isSleeping &&
@@ -101,6 +104,7 @@ namespace StockAlert.UI.World
                 return;
             }
 
+            MakeIconClickThrough(icon);
             var workerCount = building.CountWorkers();
             var maxWorkers = building.Workplaces?.Length ?? 0;
             var hasRelevantLowRecipe = workshop.Recipes.Any(r => IsEnabledLowRecipe(r, lowGoods));
@@ -132,6 +136,55 @@ namespace StockAlert.UI.World
             }
 
             LastApplied[building.Id] = snapshot;
+        }
+
+        private static void MakeIconClickThrough(GameObject icon)
+        {
+            if (icon == null)
+            {
+                return;
+            }
+
+            foreach (var graphic in icon.GetComponentsInChildren<Graphic>(true))
+            {
+                graphic.raycastTarget = false;
+            }
+
+            foreach (var selectable in icon.GetComponentsInChildren<Selectable>(true))
+            {
+                selectable.interactable = false;
+            }
+
+            foreach (var raycaster in icon.GetComponentsInChildren<GraphicRaycaster>(true))
+            {
+                raycaster.enabled = false;
+            }
+
+            foreach (var trigger in icon.GetComponentsInChildren<EventTrigger>(true))
+            {
+                trigger.enabled = false;
+            }
+
+            foreach (var component in icon.GetComponentsInChildren<Component>(true))
+            {
+                var type = component?.GetType();
+                if (type == null)
+                {
+                    continue;
+                }
+
+                var typeName = type.Name;
+                if (typeName.IndexOf("Collider", StringComparison.Ordinal) < 0)
+                {
+                    continue;
+                }
+
+                var enabledProperty = type.GetProperty("enabled");
+                if (enabledProperty != null && enabledProperty.CanWrite)
+                {
+                    enabledProperty.SetValue(component, false, null);
+                }
+            }
         }
 
         private static bool IsEnabledLowRecipe(WorkshopRecipeState recipeState, HashSet<string> lowGoods)

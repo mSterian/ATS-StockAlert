@@ -11,6 +11,7 @@ using StockAlert.Config;
 using StockAlert.Game;
 using StockAlert.UI.World;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
 namespace StockAlert.Infrastructure.Hooks
@@ -31,8 +32,12 @@ namespace StockAlert.Infrastructure.Hooks
         {
             if (!ConfigManager.EnableQueuedWorkerAssignments
                 || __instance == null
-                || race == null
-                || GameAPI.GetDefaultProfessionAmount(race.Name) > 0)
+                || race == null)
+            {
+                return true;
+            }
+
+            if (!IsQueueModifierPressed())
             {
                 return true;
             }
@@ -61,7 +66,7 @@ namespace StockAlert.Infrastructure.Hooks
         {
             if (!ConfigManager.EnableQueuedWorkerAssignments
                 || race == null
-                || GameAPI.GetDefaultProfessionAmount(race.Name) > 0)
+                || !IsQueueModifierPressed())
             {
                 return true;
             }
@@ -104,7 +109,7 @@ namespace StockAlert.Infrastructure.Hooks
             }
 
             var race = pick.GetRace();
-            if (race == null || GameAPI.GetDefaultProfessionAmount(race.Name) > 0)
+            if (race == null || !IsQueueModifierPressed())
             {
                 return true;
             }
@@ -116,6 +121,19 @@ namespace StockAlert.Infrastructure.Hooks
             var hideMethod = typeof(Eremite.View.UI.RadialMenu).GetMethod("Hide", BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
             hideMethod?.Invoke(__instance, null);
             return false;
+        }
+
+        private static bool IsQueueModifierPressed()
+        {
+            var keyboard = Keyboard.current;
+            if (keyboard != null)
+            {
+                return keyboard.leftCtrlKey.isPressed
+                    || keyboard.rightCtrlKey.isPressed
+                    || keyboard.ctrlKey.isPressed;
+            }
+
+            return Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl);
         }
 
         private static void PlayButtonSound()

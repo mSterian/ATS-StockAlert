@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.3] - 2026-05-06
+
+### Changed
+- Queued worker assignments now use Ctrl+click on a race portrait, and can queue races whether or not a free villager of that race is currently available.
+
 ## [1.1.2] - 2026-05-05
 
 ### Added

@@ -12,7 +12,7 @@ It can also optionally auto-adjust production limits for all goods you currently
 
 It can also optionally auto-adjust the Purging Fire production limit in blight posts to the number of existing cysts plus one.
 
-It can also optionally queue a chosen race for a worker slot, so the slot auto-fills the next time it becomes empty and a matching free villager becomes available.
+It can also optionally queue a chosen race for a worker slot by Ctrl+clicking a race portrait, so the slot auto-fills the next time it becomes empty and a matching free villager becomes available.
 
 - possibly fixed Options Menu text display issue on Linux/Proton and improved overall window visibility and design
 - added optional alert for idle builders that auto updates with the count of idle builders
@@ -42,7 +42,7 @@ If a good has no production limit, it is ignored by the mod.
 5. Optional: enable Purging Fire auto-adjust in the `F8` window to make blight posts keep that limit at `existing cysts + 1`.
 6. Optional: enable building shortage indicators in the `F8` window to spot where extra staffing would help with current shortages.
 7. Optional: enable builder status icons in the `F8` window to distinguish idle free builders from busy free builders.
-8. Optional: enable queued worker assignments in the `F8` window to reserve a race for a worker slot until the next vacancy.
+8. Optional: enable queued worker assignments in the `F8` window, then Ctrl+click a race portrait to reserve that race for a worker slot until the next vacancy.
 
 ## Auto-adjust option
 
@@ -62,7 +62,7 @@ If a good has no production limit, it is ignored by the mod.
 ## Queued worker assignments
 
 - off by default
-- when enabled, you can pick a race for a worker slot even if no free villager of that race is currently available
+- when enabled, Ctrl+clicking a race portrait queues that race for the worker slot, whether or not a free villager of that race is currently available
 - the queued race appears to the left of the normal worker slot icon
 - clicking the queued icon lets you change or clear the queued race
 - queued workers only auto-fill when the slot becomes empty and a matching free villager becomes available

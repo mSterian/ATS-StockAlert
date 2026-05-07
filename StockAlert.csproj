@@ -54,6 +54,10 @@
     <Reference Include="UnityEngine.UI">
       <HintPath>$(StormPath)\Against the Storm_Data\Managed\UnityEngine.UI.dll</HintPath>
     </Reference>
+
+    <Reference Include="Unity.TextMeshPro">
+      <HintPath>$(StormPath)\Against the Storm_Data\Managed\Unity.TextMeshPro.dll</HintPath>
+    </Reference>
   </ItemGroup>
 
   <!-- Auto‑deploy to BepInEx -->

@@ -20,6 +20,8 @@ namespace StockAlert.Game
         private static PropertyInfo _piVillagersService;
         private static PropertyInfo _piBuildingsService;
         private static PropertyInfo _piBlightService;
+        private static PropertyInfo _piLocalStorages;
+        private static PropertyInfo _piIngredientsStorages;
         private static PropertyInfo _piIsGameActive;
         private static PropertyInfo _piCalendarService;
         private static PropertyInfo _piTimeScaleService;
@@ -84,6 +86,57 @@ namespace StockAlert.Game
 
                 var goodName = model != null ? model.Name : fallbackId;
                 return (int)_miGetAmount.Invoke(storage, new object[] { goodName });
+            }
+            catch (Exception)
+            {
+                return 0;
+            }
+        }
+
+        public static int GetAmountInNonWarehouseBuildings(string goodId)
+        {
+            if (string.IsNullOrWhiteSpace(goodId))
+            {
+                return 0;
+            }
+
+            try
+            {
+                var storageService = GetStorageService();
+                if (storageService == null)
+                {
+                    return 0;
+                }
+
+                var total = 0;
+
+                _piLocalStorages ??= storageService.GetType().GetProperty("LocalStorages", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+                var localStorages = _piLocalStorages?.GetValue(storageService, null) as IDictionary;
+                if (localStorages != null)
+                {
+                    foreach (DictionaryEntry entry in localStorages)
+                    {
+                        if (entry.Value is BuildingStorage storage)
+                        {
+                            total += storage.GetAmount(goodId);
+                        }
+                    }
+                }
+
+                _piIngredientsStorages ??= storageService.GetType().GetProperty("IngredientsStorages", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+                var ingredientStorages = _piIngredientsStorages?.GetValue(storageService, null) as IDictionary;
+                if (ingredientStorages != null)
+                {
+                    foreach (DictionaryEntry entry in ingredientStorages)
+                    {
+                        if (entry.Value is BuildingIngredientsStorage storage && storage.goods != null)
+                        {
+                            total += storage.goods.GetAmount(goodId);
+                        }
+                    }
+                }
+
+                return total;
             }
             catch (Exception)
             {
@@ -604,6 +657,16 @@ namespace StockAlert.Game
             }
 
             return _piWorkshopsService?.GetValue(null, null);
+        }
+
+        private static object GetStorageService()
+        {
+            if (_piStorageService == null)
+            {
+                _piStorageService = typeof(GameMB).GetProperty("StorageService", BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
+            }
+
+            return _piStorageService?.GetValue(null, null);
         }
 
         private static object GetBuildingsService()

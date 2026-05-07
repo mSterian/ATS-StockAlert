@@ -17,6 +17,7 @@ namespace StockAlert.Config
         private static ConfigEntry<bool> _showBuilderStatusIcons;
         private static ConfigEntry<bool> _showIdleBuildersAlert;
         private static ConfigEntry<bool> _enableQueuedWorkerAssignments;
+        private static ConfigEntry<bool> _showIngredientWheelBuildingStock;
         private static ConfigEntry<bool> _seasonEndingTradeRoutesAlert;
         private static ConfigEntry<bool> _autoAdjustProductionLimits;
         private static ConfigEntry<bool> _autoAdjustPurgingFire;
@@ -73,6 +74,12 @@ namespace StockAlert.Config
                 "EnableQueuedWorkerAssignments",
                 false,
                 "Allow queuing a race for a worker slot so it auto-fills when a matching free villager becomes available."
+            );
+            _showIngredientWheelBuildingStock = _config.Bind(
+                "HUD",
+                "ShowIngredientWheelBuildingStock",
+                false,
+                "Show how much of each ingredient is currently sitting in non-warehouse building storage in the ingredient selection wheel."
             );
             _seasonEndingTradeRoutesAlert = _config.Bind(
                 "HUD",
@@ -256,6 +263,21 @@ namespace StockAlert.Config
             {
                 Load();
                 _seasonEndingTradeRoutesAlert.Value = value;
+                _config.Save();
+            }
+        }
+
+        public static bool ShowIngredientWheelBuildingStock
+        {
+            get
+            {
+                Load();
+                return _showIngredientWheelBuildingStock.Value;
+            }
+            set
+            {
+                Load();
+                _showIngredientWheelBuildingStock.Value = value;
                 _config.Save();
             }
         }

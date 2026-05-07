@@ -175,6 +175,16 @@ namespace StockAlert.UI.Panels
                     }
                 }
 
+                var showIngredientWheelBuildingStock = GUILayout.Toggle(
+                    ConfigManager.ShowIngredientWheelBuildingStock,
+                    "Ingredient wheel building stock",
+                    _toggleStyle
+                );
+                if (showIngredientWheelBuildingStock != ConfigManager.ShowIngredientWheelBuildingStock)
+                {
+                    ConfigManager.ShowIngredientWheelBuildingStock = showIngredientWheelBuildingStock;
+                }
+
                 var seasonEndingTradeRoutesAlert = GUILayout.Toggle(
                     ConfigManager.SeasonEndingTradeRoutesAlert,
                     "Season ending trade routes alert",

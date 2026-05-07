@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.5rc] - 2026-05-07
+
+### Added
+- Added an optional ingredient wheel building stock display that shows how much of each ingredient is currently sitting in non-warehouse buildings.
+
 ## [1.1.4] - 2026-05-07
 
 ### Fixed

@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.5rc2] - 2026-05-07
+
+### Fixed
+- Fixed the F8 options window to no longer click through to the game behind it.
+- Fixed building shortage indicators to reapply correctly when the game hides the icon state underneath them.
+
 ## [1.1.5rc] - 2026-05-07
 
 ### Added

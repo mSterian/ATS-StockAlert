@@ -4,6 +4,7 @@ using StockAlert.Config;
 using StockAlert.Game;
 using StockAlert.Infrastructure.Plugin;
 using StockAlert.UI.World;
+using UnityEngine.EventSystems;
 
 namespace StockAlert.UI.Panels
 {
@@ -61,22 +62,28 @@ namespace StockAlert.UI.Panels
 
             private Rect _windowRect = new Rect(40f, 40f, 430f, 300f);
             private string _multiplierInput = "2.0";
+            private GameObject _clickBlockerCanvasObject;
+            private RectTransform _clickBlockerRect;
 
             public bool Visible { get; private set; }
 
             public void Toggle()
             {
                 Visible = !Visible;
+                EnsureClickBlocker();
+                UpdateClickBlockerState();
             }
 
             private void OnGUI()
             {
                 if (!Visible)
                 {
+                    UpdateClickBlockerState();
                     return;
                 }
 
                 EnsureStyles();
+                EnsureClickBlocker();
                 _windowRect = GUILayout.Window(
                     GetInstanceID(),
                     _windowRect,
@@ -84,6 +91,8 @@ namespace StockAlert.UI.Panels
                     GUIContent.none,
                     _windowStyle
                 );
+                UpdateClickBlockerRect();
+                UpdateClickBlockerState();
             }
 
             private void DrawWindow(int windowId)
@@ -263,6 +272,54 @@ namespace StockAlert.UI.Panels
             public void RefreshInputs()
             {
                 _multiplierInput = ConfigManager.AutoAdjustMultiplier.ToString("0.0");
+            }
+
+            private void EnsureClickBlocker()
+            {
+                if (_clickBlockerCanvasObject != null)
+                {
+                    return;
+                }
+
+                _clickBlockerCanvasObject = new GameObject("StockAlertClickBlockerCanvas");
+                Object.DontDestroyOnLoad(_clickBlockerCanvasObject);
+
+                var canvas = _clickBlockerCanvasObject.AddComponent<Canvas>();
+                canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+                canvas.sortingOrder = short.MaxValue;
+
+                _clickBlockerCanvasObject.AddComponent<GraphicRaycaster>();
+
+                var blockerObject = new GameObject("StockAlertClickBlocker");
+                blockerObject.transform.SetParent(_clickBlockerCanvasObject.transform, false);
+
+                _clickBlockerRect = blockerObject.AddComponent<RectTransform>();
+                _clickBlockerRect.anchorMin = new Vector2(0f, 1f);
+                _clickBlockerRect.anchorMax = new Vector2(0f, 1f);
+                _clickBlockerRect.pivot = new Vector2(0f, 1f);
+
+                var image = blockerObject.AddComponent<Image>();
+                image.color = new Color(0f, 0f, 0f, 0.001f);
+                image.raycastTarget = true;
+            }
+
+            private void UpdateClickBlockerRect()
+            {
+                if (_clickBlockerRect == null)
+                {
+                    return;
+                }
+
+                _clickBlockerRect.anchoredPosition = new Vector2(_windowRect.x, -_windowRect.y);
+                _clickBlockerRect.sizeDelta = new Vector2(_windowRect.width, _windowRect.height);
+            }
+
+            private void UpdateClickBlockerState()
+            {
+                if (_clickBlockerCanvasObject != null)
+                {
+                    _clickBlockerCanvasObject.SetActive(Visible);
+                }
             }
 
             private static void EnsureStyles()

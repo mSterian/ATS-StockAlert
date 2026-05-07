@@ -124,7 +124,12 @@ namespace StockAlert.UI.World
             }
 
             var snapshot = new IndicatorSnapshot(active, color);
-            if (LastApplied.TryGetValue(building.Id, out var previous) && previous.Equals(snapshot))
+            var currentActive = icon.activeSelf;
+            var currentColor = GetCurrentIconColor(icon);
+            if (LastApplied.TryGetValue(building.Id, out var previous)
+                && previous.Equals(snapshot)
+                && currentActive == active
+                && ColorsEqual(currentColor, color))
             {
                 return;
             }
@@ -136,6 +141,25 @@ namespace StockAlert.UI.World
             }
 
             LastApplied[building.Id] = snapshot;
+        }
+
+        private static Color GetCurrentIconColor(GameObject icon)
+        {
+            if (icon == null)
+            {
+                return Color.clear;
+            }
+
+            var spriteRenderer = icon.GetComponentsInChildren<SpriteRenderer>(true).FirstOrDefault();
+            return spriteRenderer != null ? spriteRenderer.color : Color.clear;
+        }
+
+        private static bool ColorsEqual(Color a, Color b)
+        {
+            return Mathf.Approximately(a.r, b.r)
+                && Mathf.Approximately(a.g, b.g)
+                && Mathf.Approximately(a.b, b.b)
+                && Mathf.Approximately(a.a, b.a);
         }
 
         private static void MakeIconClickThrough(GameObject icon)

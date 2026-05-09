@@ -13,6 +13,7 @@ namespace StockAlert.Game.Discovery
     public static class Discovery
     {
         public static List<GoodInfo> Goods { get; } = new List<GoodInfo>();
+        public static HashSet<string> BlockedIngredientGoods { get; } = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
         public static void Initialize()
         {
@@ -134,6 +135,7 @@ namespace StockAlert.Game.Discovery
                 return;
             }
 
+            BlockedIngredientGoods.Clear();
             var visibleGoods = Goods.Where(g => g.IsBelowThreshold).ToList();
             if (visibleGoods.Count == 0)
             {
@@ -179,10 +181,21 @@ namespace StockAlert.Game.Discovery
                     {
                         bestGradeByGood[productId] = gradeLevel;
                         canContinueAtBestGrade[productId] = canContinue;
+                        if (!canContinue)
+                        {
+                            AddMissingIngredientCandidates(workshop, recipeModel, availableGlobalAmounts, BlockedIngredientGoods);
+                        }
                     }
                     else if (gradeLevel == currentBestGrade)
                     {
-                        canContinueAtBestGrade[productId] = canContinueAtBestGrade[productId] || canContinue;
+                        if (canContinue)
+                        {
+                            canContinueAtBestGrade[productId] = true;
+                        }
+                        else if (!canContinueAtBestGrade[productId])
+                        {
+                            AddMissingIngredientCandidates(workshop, recipeModel, availableGlobalAmounts, BlockedIngredientGoods);
+                        }
                     }
                 }
             }
@@ -263,8 +276,106 @@ namespace StockAlert.Game.Discovery
             return false;
         }
 
+        private static void AddMissingIngredientCandidates(
+            IWorkshop workshop,
+            WorkshopRecipeModel recipeModel,
+            IReadOnlyDictionary<string, int> globalAmounts,
+            ISet<string> blockedIngredientGoods)
+        {
+            if (blockedIngredientGoods == null || recipeModel?.requiredGoods == null || recipeModel.requiredGoods.Length == 0)
+            {
+                return;
+            }
+
+            var availableAmounts = globalAmounts.ToDictionary(pair => pair.Key, pair => pair.Value, StringComparer.OrdinalIgnoreCase);
+            var localIngredients = workshop?.IngredientsStorage?.goods?.goods;
+            if (localIngredients != null)
+            {
+                foreach (var pair in localIngredients)
+                {
+                    if (pair.Value <= 0)
+                    {
+                        continue;
+                    }
+
+                    availableAmounts[pair.Key] = availableAmounts.TryGetValue(pair.Key, out var current)
+                        ? current + pair.Value
+                        : pair.Value;
+                }
+            }
+
+            CollectMissingIngredientCandidates(recipeModel.requiredGoods, 0, availableAmounts, blockedIngredientGoods);
+        }
+
+        private static bool CollectMissingIngredientCandidates(
+            GoodsSet[] ingredientSets,
+            int setIndex,
+            Dictionary<string, int> availableAmounts,
+            ISet<string> blockedIngredientGoods)
+        {
+            if (ingredientSets == null || setIndex >= ingredientSets.Length)
+            {
+                return true;
+            }
+
+            var set = ingredientSets[setIndex];
+            if (set?.goods == null || set.goods.Length == 0)
+            {
+                return CollectMissingIngredientCandidates(ingredientSets, setIndex + 1, availableAmounts, blockedIngredientGoods);
+            }
+
+            var viableOptions = new List<GoodRef>();
+            foreach (var ingredient in set.goods)
+            {
+                if (ingredient?.good == null)
+                {
+                    continue;
+                }
+
+                var ingredientId = ingredient.good.Name;
+                var requiredAmount = ingredient.amount;
+                if (availableAmounts.TryGetValue(ingredientId, out var currentAmount) && currentAmount >= requiredAmount)
+                {
+                    viableOptions.Add(ingredient);
+                }
+            }
+
+            if (viableOptions.Count == 0)
+            {
+                foreach (var ingredient in set.goods)
+                {
+                    if (ingredient?.good == null || string.IsNullOrWhiteSpace(ingredient.good.Name))
+                    {
+                        continue;
+                    }
+
+                    blockedIngredientGoods.Add(ingredient.good.Name);
+                }
+
+                return false;
+            }
+
+            var anySuccess = false;
+            foreach (var ingredient in viableOptions)
+            {
+                var ingredientId = ingredient.good.Name;
+                var currentAmount = availableAmounts[ingredientId];
+                availableAmounts[ingredientId] = currentAmount - ingredient.amount;
+
+                if (CollectMissingIngredientCandidates(ingredientSets, setIndex + 1, availableAmounts, blockedIngredientGoods))
+                {
+                    anySuccess = true;
+                }
+
+                availableAmounts[ingredientId] = currentAmount;
+            }
+
+            return anySuccess;
+        }
+
         private static void ClearIngredientWarnings()
         {
+            BlockedIngredientGoods.Clear();
             foreach (var good in Goods)
             {
                 good.IsIngredientBlocked = false;

@@ -14,6 +14,7 @@ namespace StockAlert.Infrastructure.Hooks
     {
         private static FieldInfo _fiCounter;
         private static FieldInfo _fiSlot;
+        private static MethodInfo _miGetAmount;
 
         [HarmonyPatch(typeof(IngredientsMenuSlot), "SetUp")]
         [HarmonyPostfix]
@@ -58,6 +59,12 @@ namespace StockAlert.Infrastructure.Hooks
                 return;
             }
 
+            _miGetAmount ??= typeof(IngredientsMenuSlot).GetMethod("GetAmount", BindingFlags.Instance | BindingFlags.NonPublic);
+            var availableAmount = _miGetAmount != null
+                ? (int)_miGetAmount.Invoke(menuSlot, null)
+                : 0;
+            var neededAmount = state.good.amount;
+
             var currentText = counter.text ?? string.Empty;
             var baseText = currentText;
             var parenIndex = currentText.IndexOf(" (", System.StringComparison.Ordinal);
@@ -67,7 +74,13 @@ namespace StockAlert.Infrastructure.Hooks
             }
 
             var buildingAmount = GameAPI.GetAmountInNonWarehouseBuildings(state.good.name);
-            counter.text = $"{baseText} ({buildingAmount})";
+            if (availableAmount < neededAmount && buildingAmount > 0)
+            {
+                counter.text = $"{baseText} ({buildingAmount})";
+                return;
+            }
+
+            counter.text = baseText;
         }
     }
 }

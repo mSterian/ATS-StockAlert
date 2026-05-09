@@ -41,6 +41,8 @@ namespace StockAlert.Game
         private static PropertyInfo _piWorkshopLimits;
         private static PropertyInfo _piWorkshops;
         private static PropertyInfo _piBlightPosts;
+        private static PropertyInfo _piGathererHuts;
+        private static PropertyInfo _piCamps;
         private static FieldInfo _fiCurrentNews;
         private static PropertyInfo _piReactiveValue;
 
@@ -649,6 +651,28 @@ namespace StockAlert.Game
             return result;
         }
 
+        public static List<ProductionBuilding> GetGatheringSourceBuildings()
+        {
+            var result = new List<ProductionBuilding>();
+
+            try
+            {
+                var buildingsService = GetBuildingsService();
+                if (buildingsService == null)
+                {
+                    return result;
+                }
+
+                AddProductionBuildingsFromDictionary(buildingsService, "GathererHuts", ref _piGathererHuts, result);
+                AddProductionBuildingsFromDictionary(buildingsService, "Camps", ref _piCamps, result);
+            }
+            catch (Exception)
+            {
+            }
+
+            return result;
+        }
+
         private static object GetWorkshopsService()
         {
             if (_piWorkshopsService == null)
@@ -783,6 +807,24 @@ namespace StockAlert.Game
             {
                 var refreshMethod = entry.Value?.GetType().GetMethod("RefreshLimits", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
                 refreshMethod?.Invoke(entry.Value, null);
+            }
+        }
+
+        private static void AddProductionBuildingsFromDictionary(object buildingsService, string propertyName, ref PropertyInfo propertyInfo, List<ProductionBuilding> buildings)
+        {
+            propertyInfo ??= buildingsService.GetType().GetProperty(propertyName, BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
+            var entries = propertyInfo?.GetValue(buildingsService, null) as IDictionary;
+            if (entries == null)
+            {
+                return;
+            }
+
+            foreach (DictionaryEntry entry in entries)
+            {
+                if (entry.Value is ProductionBuilding building)
+                {
+                    buildings.Add(building);
+                }
             }
         }
     }

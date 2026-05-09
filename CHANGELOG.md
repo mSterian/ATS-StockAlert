@@ -2,16 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
-## [1.1.5rc2] - 2026-05-07
+## [1.1.5] - 2026-05-09
+
+### Added
+- Added an optional ingredient wheel building stock display that shows how much of each insufficient ingredient is currently sitting in non-warehouse buildings.
+- Extended building shortage indicators so gathering/source posts can also be marked when they can provide missing ingredients for goods that are marked red in the stock HUD.
 
 ### Fixed
 - Fixed the F8 options window to no longer click through to the game behind it.
 - Fixed building shortage indicators to reapply correctly when the game hides the icon state underneath them.
-
-## [1.1.5rc] - 2026-05-07
-
-### Added
-- Added an optional ingredient wheel building stock display that shows how much of each ingredient is currently sitting in non-warehouse buildings.
+- Potentially fixed stock alert state carrying over incorrectly between missions.
+- Potentially improved F8 settings window text display on Linux/Proton.
 
 ## [1.1.4] - 2026-05-07
 

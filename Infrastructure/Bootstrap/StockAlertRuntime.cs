@@ -18,6 +18,7 @@ namespace StockAlert.Infrastructure.Bootstrap
         private float _nextWorkerQueueRefreshTime;
         private bool _seasonEndingAlertShown;
         private GameDate _seasonEndingAlertDate;
+        private bool _wasGameActive;
 
         public static void Initialize()
         {
@@ -44,8 +45,15 @@ namespace StockAlert.Infrastructure.Bootstrap
                 PanelUI.Toggle();
             }
 
-            if (!GameAPI.IsGameActive())
+            var isGameActive = GameAPI.IsGameActive();
+            if (!isGameActive)
             {
+                if (_wasGameActive)
+                {
+                    SAPlugin.Instance?.ResetGameReady();
+                }
+
+                _wasGameActive = false;
                 BuilderStatusIndicators.Clear();
                 IdleBuildersAlert.Clear();
                 WorkerAssignmentQueue.ClearAll();
@@ -53,6 +61,8 @@ namespace StockAlert.Infrastructure.Bootstrap
                 _seasonEndingAlertDate = default;
                 return;
             }
+
+            _wasGameActive = true;
 
             UpdateSeasonEndingTradeRoutesAlert();
 

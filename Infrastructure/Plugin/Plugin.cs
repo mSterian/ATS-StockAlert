@@ -57,5 +57,16 @@ namespace StockAlert.Infrastructure.Plugin
             StockAlertRuntime.Initialize();
             AutoProductionLimits.ApplyCurrentTargets();
         }
+
+        public void ResetGameReady()
+        {
+            if (!_gameReadyInitialized)
+            {
+                return;
+            }
+
+            _gameReadyInitialized = false;
+            Log("Game-ready state reset");
+        }
     }
 }

@@ -60,7 +60,7 @@ namespace StockAlert.UI.Panels
             private static GUIStyle _fieldStyle;
             private static GUIStyle _sectionStyle;
 
-            private Rect _windowRect = new Rect(40f, 40f, 430f, 300f);
+            private Rect _windowRect = new Rect(40f, 40f, 430f, 326f);
             private string _multiplierInput = "2.0";
             private GameObject _clickBlockerCanvasObject;
             private RectTransform _clickBlockerRect;
@@ -97,11 +97,11 @@ namespace StockAlert.UI.Panels
 
             private void DrawWindow(int windowId)
             {
-                var titleRect = new Rect(20f, 12f, _windowRect.width - 40f, 28f);
-                GUI.Label(titleRect, "Stock Alert Settings", _titleStyle);
-                GUI.Box(new Rect(18f, 44f, _windowRect.width - 36f, 1f), GUIContent.none, _sectionStyle);
+                var titleRect = new Rect(20f, 14f, _windowRect.width - 40f, 36f);
+                GUI.Label(titleRect, $"Stock Alert Settings ({StockAlertInfo.Version})", _titleStyle);
+                GUI.Box(new Rect(18f, 50f, _windowRect.width - 36f, 1f), GUIContent.none, _sectionStyle);
 
-                GUILayout.Space(36f);
+                GUILayout.Space(42f);
                 GUILayout.BeginVertical();
                 GUILayout.Label("Toggle key: " + ConfigManager.ToggleSettingsKey, _bodyStyle);
                 GUILayout.Label("Use these settings to control the HUD and optional production automation.", _hintStyle);
@@ -339,7 +339,7 @@ namespace StockAlert.UI.Panels
                 _windowStyle = new GUIStyle(GUI.skin.window)
                 {
                     border = new RectOffset(3, 3, 3, 3),
-                    padding = new RectOffset(14, 14, 12, 12)
+                    padding = new RectOffset(14, 14, 16, 12)
                 };
                 _windowStyle.normal.background = _windowBackground;
                 _windowStyle.hover.background = _windowBackground;
@@ -365,12 +365,15 @@ namespace StockAlert.UI.Panels
                     richText = true,
                     normal = { textColor = new Color32(222, 196, 132, 255) }
                 };
+                _titleStyle.clipping = TextClipping.Overflow;
 
                 _bodyStyle = new GUIStyle(GUI.skin.label)
                 {
                     font = _uiFont,
                     fontSize = 13,
                     wordWrap = true,
+                    clipping = TextClipping.Overflow,
+                    padding = new RectOffset(0, 0, 1, 3),
                     normal = { textColor = new Color32(220, 216, 204, 255) }
                 };
 
@@ -384,8 +387,9 @@ namespace StockAlert.UI.Panels
                 {
                     font = _uiFont,
                     fontSize = 13,
-                    margin = new RectOffset(4, 4, 2, 2),
-                    padding = new RectOffset(20, 4, 2, 2),
+                    margin = new RectOffset(4, 4, 3, 3),
+                    padding = new RectOffset(20, 4, 1, 4),
+                    clipping = TextClipping.Overflow,
                     normal = { textColor = new Color32(226, 221, 210, 255) },
                     onNormal = { textColor = new Color32(236, 228, 214, 255) },
                     hover = { textColor = new Color32(245, 235, 216, 255) },
@@ -418,6 +422,7 @@ namespace StockAlert.UI.Panels
                 {
                     font = _uiFont,
                     fontSize = 13,
+                    padding = new RectOffset(6, 6, 2, 4),
                     normal =
                     {
                         background = _fieldBackground,
@@ -474,6 +479,29 @@ namespace StockAlert.UI.Panels
                         {
                             return text.font;
                         }
+                    }
+                }
+                catch
+                {
+                }
+
+                try
+                {
+                    var dynamicFont = Font.CreateDynamicFontFromOSFont(
+                        new[]
+                        {
+                            "Segoe UI",
+                            "Liberation Sans",
+                            "DejaVu Sans",
+                            "Noto Sans",
+                            "Ubuntu",
+                            "Arial"
+                        },
+                        14
+                    );
+                    if (dynamicFont != null)
+                    {
+                        return dynamicFont;
                     }
                 }
                 catch

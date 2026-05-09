@@ -8,7 +8,10 @@ using System.Collections.Generic;
 using System.Reflection;
 using Eremite.Buildings;
 using Eremite.Characters.Villagers;
+using Eremite.MapObjects;
 using System.Linq;
+using StockAlert.Core.Models;
+using UnityEngine;
 
 namespace StockAlert.Game
 {
@@ -26,6 +29,10 @@ namespace StockAlert.Game
         private static PropertyInfo _piCalendarService;
         private static PropertyInfo _piTimeScaleService;
         private static PropertyInfo _piNewsService;
+        private static PropertyInfo _piResourcesService;
+        private static PropertyInfo _piDepositsService;
+        private static PropertyInfo _piLakesService;
+        private static PropertyInfo _piOreService;
         private static MethodInfo _miGetAmount;
         private static MethodInfo _miGetGlobalLimit;
         private static MethodInfo _miSetGlobalLimit;
@@ -673,6 +680,32 @@ namespace StockAlert.Game
             return result;
         }
 
+        internal static List<TrackedItemLocation> GetTrackedItemLocations(string goodId)
+        {
+            var results = new Dictionary<string, TrackedItemLocation>(StringComparer.OrdinalIgnoreCase);
+            if (string.IsNullOrWhiteSpace(goodId))
+            {
+                return results.Values.ToList();
+            }
+
+            try
+            {
+                AddBuildingStorageLocations(goodId, results);
+                AddIngredientStorageLocations(goodId, results);
+                AddRelicLocations(goodId, results);
+                AddCarriedGoodDestinations(goodId, results);
+                AddNaturalResourceLocations(goodId, results);
+                AddDepositLocations(goodId, results);
+                AddLakeLocations(goodId, results);
+                AddOreLocations(goodId, results);
+            }
+            catch (Exception)
+            {
+            }
+
+            return results.Values.ToList();
+        }
+
         private static object GetWorkshopsService()
         {
             if (_piWorkshopsService == null)
@@ -753,6 +786,46 @@ namespace StockAlert.Game
             return _piNewsService?.GetValue(null, null);
         }
 
+        private static object GetResourcesService()
+        {
+            if (_piResourcesService == null)
+            {
+                _piResourcesService = typeof(GameMB).GetProperty("ResourcesService", BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
+            }
+
+            return _piResourcesService?.GetValue(null, null);
+        }
+
+        private static object GetDepositsService()
+        {
+            if (_piDepositsService == null)
+            {
+                _piDepositsService = typeof(GameMB).GetProperty("DepositsService", BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
+            }
+
+            return _piDepositsService?.GetValue(null, null);
+        }
+
+        private static object GetLakesService()
+        {
+            if (_piLakesService == null)
+            {
+                _piLakesService = typeof(GameMB).GetProperty("LakesService", BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
+            }
+
+            return _piLakesService?.GetValue(null, null);
+        }
+
+        private static object GetOreService()
+        {
+            if (_piOreService == null)
+            {
+                _piOreService = typeof(GameMB).GetProperty("OreService", BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
+            }
+
+            return _piOreService?.GetValue(null, null);
+        }
+
         private static void AddRecipeGoodsFromDictionary(object buildingsService, string propertyName, ref PropertyInfo propertyInfo, HashSet<string> goods)
         {
             propertyInfo ??= buildingsService.GetType().GetProperty(propertyName, BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
@@ -826,6 +899,279 @@ namespace StockAlert.Game
                     buildings.Add(building);
                 }
             }
+        }
+
+        private static void AddBuildingStorageLocations(string goodId, IDictionary<string, TrackedItemLocation> results)
+        {
+            var storageService = GetStorageService();
+            if (storageService == null)
+            {
+                return;
+            }
+
+            _piLocalStorages ??= storageService.GetType().GetProperty("LocalStorages", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            var storages = _piLocalStorages?.GetValue(storageService, null) as IDictionary;
+            if (storages == null)
+            {
+                return;
+            }
+
+            foreach (DictionaryEntry entry in storages)
+            {
+                if (entry.Value is not BuildingStorage storage)
+                {
+                    continue;
+                }
+
+                var owner = storage.Owner;
+                var amount = storage.GetAmount(goodId);
+                if (owner == null || owner is Storage || amount <= 0)
+                {
+                    continue;
+                }
+
+                AddLocation(results, $"building:{owner.Id}", owner, owner.Center, amount);
+            }
+        }
+
+        private static void AddIngredientStorageLocations(string goodId, IDictionary<string, TrackedItemLocation> results)
+        {
+            var storageService = GetStorageService();
+            if (storageService == null)
+            {
+                return;
+            }
+
+            _piIngredientsStorages ??= storageService.GetType().GetProperty("IngredientsStorages", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            var storages = _piIngredientsStorages?.GetValue(storageService, null) as IDictionary;
+            if (storages == null)
+            {
+                return;
+            }
+
+            foreach (DictionaryEntry entry in storages)
+            {
+                if (entry.Value is not BuildingIngredientsStorage storage)
+                {
+                    continue;
+                }
+
+                var owner = storage.owner;
+                var amount = storage.goods?.GetAmount(goodId) ?? 0;
+                if (owner == null || owner is Storage || storage.goods == null || amount <= 0)
+                {
+                    continue;
+                }
+
+                AddLocation(results, $"building:{owner.Id}", owner, owner.Center, amount);
+            }
+        }
+
+        private static void AddRelicLocations(string goodId, IDictionary<string, TrackedItemLocation> results)
+        {
+            var buildingsService = GetBuildingsService();
+            if (buildingsService == null)
+            {
+                return;
+            }
+
+            var relicsProperty = buildingsService.GetType().GetProperty("Relics", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            var relics = relicsProperty?.GetValue(buildingsService, null) as IDictionary;
+            if (relics == null)
+            {
+                return;
+            }
+
+            foreach (DictionaryEntry entry in relics)
+            {
+                if (entry.Value is not Relic relic || relic.state == null)
+                {
+                    continue;
+                }
+
+                var requiredAmount = relic.state.relicGoods?.GetAmount(goodId) ?? 0;
+                var rewardAmount = relic.state.rewards?.GetAmount(goodId) ?? 0;
+                if (requiredAmount <= 0 && rewardAmount <= 0)
+                {
+                    continue;
+                }
+
+                AddLocation(results, $"building:{relic.Id}", relic, relic.Center, requiredAmount + rewardAmount);
+            }
+        }
+
+        private static void AddCarriedGoodDestinations(string goodId, IDictionary<string, TrackedItemLocation> results)
+        {
+            var villagersService = GetVillagersService();
+            var buildingsService = GetBuildingsService();
+            if (villagersService == null || buildingsService == null)
+            {
+                return;
+            }
+
+            var villagersProperty = villagersService.GetType().GetProperty("Villagers", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            var villagers = villagersProperty?.GetValue(villagersService, null) as IDictionary;
+            var buildingsProperty = buildingsService.GetType().GetProperty("Buildings", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            var buildings = buildingsProperty?.GetValue(buildingsService, null) as IDictionary;
+            if (villagers == null || buildings == null)
+            {
+                return;
+            }
+
+            foreach (DictionaryEntry entry in villagers)
+            {
+                if (entry.Value is not Villager villager || villager.state == null || !villager.state.isAlive)
+                {
+                    continue;
+                }
+
+                var amount = 0;
+                var carried = villager.state.carriedGood;
+                if (string.Equals(carried.name, goodId, StringComparison.OrdinalIgnoreCase) && carried.amount > 0)
+                {
+                    amount = carried.amount;
+                }
+                else
+                {
+                    var requested = villager.state.servedGoodRequest.good;
+                    if (string.Equals(requested.name, goodId, StringComparison.OrdinalIgnoreCase) && requested.amount > 0)
+                    {
+                        amount = requested.amount;
+                    }
+                }
+
+                if (amount <= 0)
+                {
+                    continue;
+                }
+
+                var toId = villager.state.servedGoodRequest.toId;
+                if (toId <= 0 || !buildings.Contains(toId) || buildings[toId] is not Building building || building is Storage)
+                {
+                    continue;
+                }
+
+                AddLocation(results, $"building:{building.Id}", building, building.Center, amount);
+            }
+        }
+
+        private static void AddNaturalResourceLocations(string goodId, IDictionary<string, TrackedItemLocation> results)
+        {
+            return;
+        }
+
+        private static void AddDepositLocations(string goodId, IDictionary<string, TrackedItemLocation> results)
+        {
+            var depositsService = GetDepositsService();
+            if (depositsService == null)
+            {
+                return;
+            }
+
+            var property = depositsService.GetType().GetProperty("AvailableDeposits", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            if (property?.GetValue(depositsService, null) is not IDictionary deposits || !deposits.Contains(goodId))
+            {
+                return;
+            }
+
+            if (deposits[goodId] is not IEnumerable<ResourceDeposit> availableDeposits)
+            {
+                return;
+            }
+
+            foreach (var deposit in availableDeposits)
+            {
+                if (deposit == null || !deposit.State.isAvailable || !deposit.State.isActive || deposit.State.chargesLeft <= 0)
+                {
+                    continue;
+                }
+
+                AddLocation(results, $"deposit:{deposit.Field.x}:{deposit.Field.y}", deposit, deposit.Center, 0);
+            }
+        }
+
+        private static void AddLakeLocations(string goodId, IDictionary<string, TrackedItemLocation> results)
+        {
+            var lakesService = GetLakesService();
+            if (lakesService == null)
+            {
+                return;
+            }
+
+            var property = lakesService.GetType().GetProperty("AvailableLakes", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            if (property?.GetValue(lakesService, null) is not IDictionary lakes || !lakes.Contains(goodId))
+            {
+                return;
+            }
+
+            if (lakes[goodId] is not IEnumerable<Lake> availableLakes)
+            {
+                return;
+            }
+
+            foreach (var lake in availableLakes)
+            {
+                if (lake == null || !lake.State.isAvailable || lake.State.chargesLeft <= 0)
+                {
+                    continue;
+                }
+
+                AddLocation(results, $"lake:{lake.Field.x}:{lake.Field.y}", lake, lake.Center, 0);
+            }
+        }
+
+        private static void AddOreLocations(string goodId, IDictionary<string, TrackedItemLocation> results)
+        {
+            var oreService = GetOreService();
+            if (oreService == null)
+            {
+                return;
+            }
+
+            var property = oreService.GetType().GetProperty("Ore", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            if (property?.GetValue(oreService, null) is not IDictionary ores)
+            {
+                return;
+            }
+
+            foreach (DictionaryEntry entry in ores)
+            {
+                if (entry.Value is not Ore ore || !string.Equals(ore.GetRefGood(), goodId, StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                if ((ore.State.mainCharges?.Sum() ?? 0) + (ore.State.extraCharges?.Sum() ?? 0) <= 0)
+                {
+                    continue;
+                }
+
+                AddLocation(results, $"ore:{ore.Field.x}:{ore.Field.y}", ore, ore.Center, 0);
+            }
+        }
+
+        private static void AddLocation(IDictionary<string, TrackedItemLocation> results, string key, UnityEngine.Object source, Vector3 fallbackPosition, int amount)
+        {
+            if (string.IsNullOrWhiteSpace(key) || source == null)
+            {
+                return;
+            }
+
+            if (results.TryGetValue(key, out var existing) && existing != null)
+            {
+                existing.Source = source;
+                existing.FallbackPosition = fallbackPosition;
+                existing.Amount += Math.Max(0, amount);
+                return;
+            }
+
+            results[key] = new TrackedItemLocation
+            {
+                Key = key,
+                Source = source,
+                FallbackPosition = fallbackPosition,
+                Amount = Math.Max(0, amount)
+            };
         }
     }
 }

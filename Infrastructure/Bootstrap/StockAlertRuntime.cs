@@ -16,6 +16,7 @@ namespace StockAlert.Infrastructure.Bootstrap
         private float _nextAutoAdjustTime;
         private float _nextBuilderStatusRefreshTime;
         private float _nextWorkerQueueRefreshTime;
+        private float _nextItemLocatorRefreshTime;
         private bool _seasonEndingAlertShown;
         private GameDate _seasonEndingAlertDate;
         private bool _wasGameActive;
@@ -57,6 +58,7 @@ namespace StockAlert.Infrastructure.Bootstrap
                 BuilderStatusIndicators.Clear();
                 IdleBuildersAlert.Clear();
                 WorkerAssignmentQueue.ClearAll();
+                ItemLocatorOverlay.Clear();
                 _seasonEndingAlertShown = false;
                 _seasonEndingAlertDate = default;
                 return;
@@ -92,6 +94,12 @@ namespace StockAlert.Infrastructure.Bootstrap
                     WorkerAssignmentQueue.ClearAll();
                     QueuedWorkerSlotCompanion.ClearAll();
                 }
+            }
+
+            if (Time.unscaledTime >= _nextItemLocatorRefreshTime)
+            {
+                _nextItemLocatorRefreshTime = Time.unscaledTime + 0.5f;
+                ItemLocatorOverlay.Refresh();
             }
 
             if (!ConfigManager.AutoAdjustProductionLimits && !ConfigManager.AutoAdjustPurgingFire)

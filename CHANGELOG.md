@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.6] - 2026-05-09
+
+### Added
+- Added an item finder overlay that can be used by Ctrl+clicking an item's icon.
+- The overlay appears above buildings, events, and resource nodes that contain or provide that item.
+- Building overlays show how much of that item is there, including goods already in transit to that building.
+- Resource nodes do not show a count.
+
 ## [1.1.5] - 2026-05-09
 
 ### Added

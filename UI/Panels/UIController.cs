@@ -60,7 +60,7 @@ namespace StockAlert.UI.Panels
             private static GUIStyle _fieldStyle;
             private static GUIStyle _sectionStyle;
 
-            private Rect _windowRect = new Rect(40f, 40f, 430f, 326f);
+            private Rect _windowRect = new Rect(40f, 40f, 430f, 346f);
             private string _multiplierInput = "2.0";
             private GameObject _clickBlockerCanvasObject;
             private RectTransform _clickBlockerRect;
@@ -192,6 +192,16 @@ namespace StockAlert.UI.Panels
                 if (showIngredientWheelBuildingStock != ConfigManager.ShowIngredientWheelBuildingStock)
                 {
                     ConfigManager.ShowIngredientWheelBuildingStock = showIngredientWheelBuildingStock;
+                }
+
+                var showEmbarkationCostRanges = GUILayout.Toggle(
+                    ConfigManager.ShowEmbarkationCostRanges,
+                    "Embarkation cost ranges",
+                    _toggleStyle
+                );
+                if (showEmbarkationCostRanges != ConfigManager.ShowEmbarkationCostRanges)
+                {
+                    ConfigManager.ShowEmbarkationCostRanges = showEmbarkationCostRanges;
                 }
 
                 var seasonEndingTradeRoutesAlert = GUILayout.Toggle(

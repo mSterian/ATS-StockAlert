@@ -18,6 +18,7 @@ namespace StockAlert.Config
         private static ConfigEntry<bool> _showIdleBuildersAlert;
         private static ConfigEntry<bool> _enableQueuedWorkerAssignments;
         private static ConfigEntry<bool> _showIngredientWheelBuildingStock;
+        private static ConfigEntry<bool> _showEmbarkationCostRanges;
         private static ConfigEntry<bool> _seasonEndingTradeRoutesAlert;
         private static ConfigEntry<bool> _autoAdjustProductionLimits;
         private static ConfigEntry<bool> _autoAdjustPurgingFire;
@@ -80,6 +81,12 @@ namespace StockAlert.Config
                 "ShowIngredientWheelBuildingStock",
                 false,
                 "Show how much of each ingredient is currently sitting in non-warehouse building storage in the ingredient selection wheel."
+            );
+            _showEmbarkationCostRanges = _config.Bind(
+                "HUD",
+                "ShowEmbarkationCostRanges",
+                false,
+                "Show embarkation bonus costs as current cost over maximum possible cost."
             );
             _seasonEndingTradeRoutesAlert = _config.Bind(
                 "HUD",
@@ -278,6 +285,21 @@ namespace StockAlert.Config
             {
                 Load();
                 _showIngredientWheelBuildingStock.Value = value;
+                _config.Save();
+            }
+        }
+
+        public static bool ShowEmbarkationCostRanges
+        {
+            get
+            {
+                Load();
+                return _showEmbarkationCostRanges.Value;
+            }
+            set
+            {
+                Load();
+                _showEmbarkationCostRanges.Value = value;
                 _config.Save();
             }
         }

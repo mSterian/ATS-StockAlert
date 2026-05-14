@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.7] - 2026-05-14
+
+### Added
+- Added an optional embarkation cost range display that shows embarkation bonus costs as current cost over maximum possible cost.
+- The current cost is colored green for the lowest possible roll, yellow for a middle roll, and red for the highest possible roll.
+
 ## [1.1.6] - 2026-05-09
 
 ### Added

@@ -16,6 +16,8 @@ It can also optionally queue a chosen race for a worker slot by Ctrl+clicking a 
 
 It can also optionally show how much of each insufficient ingredient is currently sitting in non-warehouse buildings in the ingredient selection wheel.
 
+It can also optionally show embarkation bonus costs as current/max cost, with the current cost colored by where it falls in the possible range.
+
 It can also show an overlay for finding items by Ctrl+clicking an item's icon. The overlay appears above buildings, events, and resource nodes that contain or provide that item.
 
 It can also optionally show a persistent alert when you have idle builders, and optionally pause with an alert 3 seconds before a season ends so you can check trade routes.
@@ -33,7 +35,7 @@ Integrated Builder Icon mod made by ~DGH into my mod with some changes:
 
 Newly triggered shortages go at the top of the list.
 
-Options for movable, hideable, building indicators, builder status icons, idle builders alert, queued worker assignments, ingredient wheel building stock, season ending trade routes alert, Purging Fire auto-adjust, and production limit multiplier are available in the `F8` settings window.
+Options for movable, hideable, building indicators, builder status icons, idle builders alert, queued worker assignments, ingredient wheel building stock, embarkation cost ranges, season ending trade routes alert, Purging Fire auto-adjust, and production limit multiplier are available in the `F8` settings window.
 
 If a good has no production limit, it is ignored by the mod.
 
@@ -48,7 +50,8 @@ If a good has no production limit, it is ignored by the mod.
 7. Optional: enable builder status icons in the `F8` window to distinguish idle free builders from busy free builders.
 8. Optional: enable queued worker assignments in the `F8` window, then Ctrl+click a race portrait to reserve that race for a worker slot until the next vacancy.
 9. Optional: enable ingredient wheel building stock in the `F8` window to show how much of each insufficient ingredient is currently sitting in non-warehouse buildings.
-10. Ctrl+click an item's icon to show an overlay over buildings, events, and resource nodes that contain or provide that item.
+10. Optional: enable embarkation cost ranges in the `F8` window to show embarkation bonus costs as current/max cost.
+11. Ctrl+click an item's icon to show an overlay over buildings, events, and resource nodes that contain or provide that item.
 
 ## Auto-adjust option
 
@@ -80,6 +83,12 @@ If a good has no production limit, it is ignored by the mod.
 - off by default
 - when enabled, the ingredient wheel shows how much of each insufficient ingredient is currently sitting in non-warehouse buildings
 - the extra amount appears in parentheses after the normal `available/needed` value
+
+## Embarkation cost ranges
+
+- off by default
+- when enabled, embarkation bonus costs are shown as current cost over maximum possible cost
+- the current cost is green for the lowest possible roll, yellow for a middle roll, and red for the highest possible roll
 
 ## Item finder overlay
 

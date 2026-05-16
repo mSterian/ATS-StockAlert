@@ -4,7 +4,7 @@
 
 ## What it does
 
-Displays goods that have a production limit set in the Recipes menu, and shows their current/max stock in a compact, movable, hideable HUD in the bottom-right corner.
+Displays goods that have a production limit set in the Recipes menu, and shows their current/max stock in a compact, movable, hideable HUD anchored to the bottom-right or bottom-left corner.
 
 Stock below production limit that cannot be produced further (after current in-progress productions), are now marked in red.
 
@@ -16,7 +16,9 @@ It can also optionally queue a chosen race for a worker slot by Ctrl+clicking a 
 
 It can also optionally show how much of each insufficient ingredient is currently sitting in non-warehouse buildings in the ingredient selection wheel.
 
-It can also optionally show embarkation bonus costs as current/max cost, with the current cost colored by where it falls in the possible range.
+It can also optionally show the embarkation bonus cost range on the top-left and the current cost on the top-right, colored by where it falls in the possible range.
+
+It can also optionally show estimated profit per good on trade route offers, based on final amber reward minus the current trader sell value of the materials and packs of provisions.
 
 It can also show an overlay for finding items by Ctrl+clicking an item's icon. The overlay appears above buildings, events, and resource nodes that contain or provide that item.
 
@@ -32,10 +34,11 @@ When a good is marked red because it cannot continue production after current in
 Integrated Builder Icon mod made by ~DGH into my mod with some changes:
 - the exclamation marker for builders that are idling
 - the hammer icon for all other builders
+- when builder status icons are enabled, race portraits in the building worker assignment wheel are also marked if that race has an idle builder
 
 Newly triggered shortages go at the top of the list.
 
-Options for movable, hideable, building indicators, builder status icons, idle builders alert, queued worker assignments, ingredient wheel building stock, embarkation cost ranges, season ending trade routes alert, Purging Fire auto-adjust, and production limit multiplier are available in the `F8` settings window.
+Options for HUD anchor, movable, hideable, building indicators, builder status icons, idle builders alert, queued worker assignments, ingredient wheel building stock, embarkation cost ranges, trade route profit, season ending trade routes alert, Purging Fire auto-adjust, and production limit multiplier are available in the `F8` settings window.
 
 If a good has no production limit, it is ignored by the mod.
 
@@ -44,14 +47,16 @@ If a good has no production limit, it is ignored by the mod.
 1. Set a global production limit for a good in the Recipes menu.
 2. When your current stock drops below that limit, the good appears in the Stock Alert HUD.
 3. Press `F8` to open the Stock Alert settings window.
-4. Optional: enable auto-adjust in the `F8` window to make the mod set eligible global production limits for you.
-5. Optional: enable Purging Fire auto-adjust in the `F8` window to make blight posts keep that limit at `existing cysts + 1`.
-6. Optional: enable building shortage indicators in the `F8` window to spot where extra staffing would help with current shortages.
-7. Optional: enable builder status icons in the `F8` window to distinguish idle free builders from busy free builders.
-8. Optional: enable queued worker assignments in the `F8` window, then Ctrl+click a race portrait to reserve that race for a worker slot until the next vacancy.
-9. Optional: enable ingredient wheel building stock in the `F8` window to show how much of each insufficient ingredient is currently sitting in non-warehouse buildings.
-10. Optional: enable embarkation cost ranges in the `F8` window to show embarkation bonus costs as current/max cost.
-11. Ctrl+click an item's icon to show an overlay over buildings, events, and resource nodes that contain or provide that item.
+4. Optional: choose whether the Stock Alert HUD anchors to the bottom-right or bottom-left corner.
+5. Optional: enable auto-adjust in the `F8` window to make the mod set eligible global production limits for you.
+6. Optional: enable Purging Fire auto-adjust in the `F8` window to make blight posts keep that limit at `existing cysts + 1`.
+7. Optional: enable building shortage indicators in the `F8` window to spot where extra staffing would help with current shortages.
+8. Optional: enable builder status icons in the `F8` window to distinguish idle free builders from busy free builders and mark matching race portraits in the building worker assignment wheel.
+9. Optional: enable queued worker assignments in the `F8` window, then Ctrl+click a race portrait to reserve that race for a worker slot until the next vacancy.
+10. Optional: enable ingredient wheel building stock in the `F8` window to show how much of each insufficient ingredient is currently sitting in non-warehouse buildings.
+11. Optional: enable embarkation cost ranges in the `F8` window to show the possible cost range and current cost on embarkation bonuses.
+12. Optional: enable trade route profit in the `F8` window to show estimated profit per good on trade route offers.
+13. Ctrl+click an item's icon to show an overlay over buildings, events, and resource nodes that contain or provide that item.
 
 ## Auto-adjust option
 
@@ -87,8 +92,18 @@ If a good has no production limit, it is ignored by the mod.
 ## Embarkation cost ranges
 
 - off by default
-- when enabled, embarkation bonus costs are shown as current cost over maximum possible cost
+- when enabled, embarkation bonus cost ranges are shown on the top-left of each bonus, with the current cost on the top-right
 - the current cost is green for the lowest possible roll, yellow for a middle roll, and red for the highest possible roll
+- since the F8 settings window is currently only available while in a mission, players who want to enable it before embarking should launch the game once with this mod version to generate the config option, quit the game, then set `ShowEmbarkationCostRanges = true` in the BepInEx config
+
+## Trade route profit
+
+- off by default
+- when enabled, trade route offers show estimated profit per good next to the travel time
+- profit is calculated as final amber reward minus the current trader sell value of the materials and packs of provisions
+- the displayed value divides that total profit by the number of goods sent
+- trade route reward, packs of provisions, and trader sell value modifiers are included
+- travel time is not converted into profit
 
 ## Item finder overlay
 

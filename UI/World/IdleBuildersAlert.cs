@@ -8,8 +8,10 @@ namespace StockAlert.UI.World
 {
     internal static class IdleBuildersAlert
     {
+        public const string AlertPrefix = "You have idle builders:";
+
         private static News _activeNews;
-        private static int _lastCount;
+        private static string _lastContent;
 
         public static void Refresh()
         {
@@ -26,14 +28,14 @@ namespace StockAlert.UI.World
                 return;
             }
 
-            var content = $"You have idle builders: {count}";
+            var content = BuildContent(count);
             var currentNews = GameAPI.GetCurrentNews();
             var existingNews = currentNews.FirstOrDefault(news => news != null && news.content == content);
 
             if (existingNews != null)
             {
                 _activeNews = existingNews;
-                _lastCount = count;
+                _lastContent = content;
                 return;
             }
 
@@ -43,13 +45,13 @@ namespace StockAlert.UI.World
                 _activeNews = null;
             }
 
-            if (_lastCount == count && currentNews.Any(news => news != null && news.content != null && news.content.StartsWith("You have idle builders:")))
+            if (_lastContent == content && currentNews.Any(news => news != null && news.content != null && news.content.StartsWith(AlertPrefix)))
             {
                 return;
             }
 
             _activeNews = GameAPI.PublishNews(content);
-            _lastCount = count;
+            _lastContent = content;
         }
 
         public static void Clear()
@@ -60,7 +62,19 @@ namespace StockAlert.UI.World
                 _activeNews = null;
             }
 
-            _lastCount = 0;
+            _lastContent = null;
+        }
+
+        private static string BuildContent(int count)
+        {
+            var raceSummaries = BuilderStatusIndicators.GetIdleBuilderRaceSummaries();
+            if (raceSummaries.Count == 0)
+            {
+                return $"{AlertPrefix} {count}";
+            }
+
+            var species = string.Join("\n", raceSummaries);
+            return $"{AlertPrefix} {count}\n{species}";
         }
     }
 }

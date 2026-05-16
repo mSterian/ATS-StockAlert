@@ -221,7 +221,10 @@ namespace StockAlert.UI.HUD
                 if (saved.x < 0f || saved.y < 0f)
                 {
                     _lastHudSize = new Vector2(width, height);
-                    return new Rect(Screen.width - width - BoxMargin, Screen.height - height - BoxMargin, width, height);
+                    var defaultX = ConfigManager.HudAnchor == ConfigManager.HudHorizontalAnchor.Left
+                        ? BoxMargin
+                        : Screen.width - width - BoxMargin;
+                    return new Rect(defaultX, Screen.height - height - BoxMargin, width, height);
                 }
 
                 if (!_isDragging && _lastHudSize.HasValue)
@@ -231,7 +234,10 @@ namespace StockAlert.UI.HUD
                     var deltaY = previousSize.y - height;
                     if (!Mathf.Approximately(deltaX, 0f) || !Mathf.Approximately(deltaY, 0f))
                     {
-                        saved = new Vector2(saved.x + deltaX, saved.y + deltaY);
+                        var x = ConfigManager.HudAnchor == ConfigManager.HudHorizontalAnchor.Right
+                            ? saved.x + deltaX
+                            : saved.x;
+                        saved = new Vector2(x, saved.y + deltaY);
                     }
                 }
 

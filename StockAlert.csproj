@@ -10,6 +10,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="TradeRouteDiagnostics\**\*.cs" />
+    <EmbeddedResource Remove="TradeRouteDiagnostics\**\*" />
+    <None Remove="TradeRouteDiagnostics\**\*" />
+  </ItemGroup>
+
+  <ItemGroup>
     <!-- BepInEx -->
     <Reference Include="BepInEx">
       <HintPath>$(StormPath)\BepInEx\core\BepInEx.dll</HintPath>

@@ -99,6 +99,13 @@ namespace StockAlert.Infrastructure.Hooks
             }
         }
 
+        [HarmonyPatch(typeof(RacesMenuSlot), "SetUp")]
+        [HarmonyPostfix]
+        private static void RacesMenuSlotSetUpPostfix(RacesMenuSlot __instance)
+        {
+            IdleBuilderRaceMenuMarker.Attach(__instance);
+        }
+
         [HarmonyPatch(typeof(RacesMenu), "OnClicked")]
         [HarmonyPrefix]
         private static bool RacesMenuOnClickedPrefix(RacesMenu __instance, RacesMenuSlot pick)

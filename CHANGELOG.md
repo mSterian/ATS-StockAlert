@@ -5,8 +5,13 @@ All notable changes to this project will be documented in this file.
 ## [1.1.7] - 2026-05-14
 
 ### Added
-- Added an optional embarkation cost range display that shows embarkation bonus costs as current cost over maximum possible cost.
+- Added an optional embarkation cost range display that shows the possible cost range on the top-left of each bonus and the current cost on the top-right.
 - The current cost is colored green for the lowest possible roll, yellow for a middle roll, and red for the highest possible roll.
+- The embarkation cost range display is off by default. Since the F8 settings window is currently only available while in a mission, players who want to enable it before embarking should launch the game once with this mod version to generate the config option, quit the game, then set `ShowEmbarkationCostRanges = true` in the BepInEx config.
+- Added an optional trade route profit display that shows estimated profit per good on route offers.
+- Trade route profit is off by default and uses final amber rewards plus the current trader sell value of material and packs of provisions costs.
+- Builder status icons now also mark race portraits in the building worker assignment wheel when that race has an idle builder.
+- Added an F8 option to anchor the Stock Alert HUD to either the bottom-right or bottom-left corner.
 
 ## [1.1.6] - 2026-05-09
 

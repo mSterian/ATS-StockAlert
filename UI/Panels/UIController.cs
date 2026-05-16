@@ -60,7 +60,7 @@ namespace StockAlert.UI.Panels
             private static GUIStyle _fieldStyle;
             private static GUIStyle _sectionStyle;
 
-            private Rect _windowRect = new Rect(40f, 40f, 430f, 346f);
+            private Rect _windowRect = new Rect(40f, 40f, 430f, 390f);
             private string _multiplierInput = "2.0";
             private GameObject _clickBlockerCanvasObject;
             private RectTransform _clickBlockerRect;
@@ -118,6 +118,24 @@ namespace StockAlert.UI.Panels
                 {
                     ConfigManager.MovableHud = movableHud;
                 }
+
+                GUILayout.BeginHorizontal();
+                GUILayout.Space(20f);
+                GUILayout.Label("HUD anchor", _bodyStyle, GUILayout.Width(92f));
+                if (GUILayout.Toggle(ConfigManager.HudAnchor == ConfigManager.HudHorizontalAnchor.Left, "Left", _buttonStyle, GUILayout.Width(72f)) &&
+                    ConfigManager.HudAnchor != ConfigManager.HudHorizontalAnchor.Left)
+                {
+                    ConfigManager.HudAnchor = ConfigManager.HudHorizontalAnchor.Left;
+                    ConfigManager.HudPosition = new Vector2(-1f, -1f);
+                }
+                if (GUILayout.Toggle(ConfigManager.HudAnchor == ConfigManager.HudHorizontalAnchor.Right, "Right", _buttonStyle, GUILayout.Width(72f)) &&
+                    ConfigManager.HudAnchor != ConfigManager.HudHorizontalAnchor.Right)
+                {
+                    ConfigManager.HudAnchor = ConfigManager.HudHorizontalAnchor.Right;
+                    ConfigManager.HudPosition = new Vector2(-1f, -1f);
+                }
+                GUILayout.FlexibleSpace();
+                GUILayout.EndHorizontal();
 
                 var buildingIndicators = GUILayout.Toggle(
                     ConfigManager.ShowBuildingAlertIndicators,
@@ -202,6 +220,16 @@ namespace StockAlert.UI.Panels
                 if (showEmbarkationCostRanges != ConfigManager.ShowEmbarkationCostRanges)
                 {
                     ConfigManager.ShowEmbarkationCostRanges = showEmbarkationCostRanges;
+                }
+
+                var showTradeRouteProfit = GUILayout.Toggle(
+                    ConfigManager.ShowTradeRouteProfit,
+                    "Trade route profit",
+                    _toggleStyle
+                );
+                if (showTradeRouteProfit != ConfigManager.ShowTradeRouteProfit)
+                {
+                    ConfigManager.ShowTradeRouteProfit = showTradeRouteProfit;
                 }
 
                 var seasonEndingTradeRoutesAlert = GUILayout.Toggle(

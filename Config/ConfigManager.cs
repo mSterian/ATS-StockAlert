@@ -19,12 +19,20 @@ namespace StockAlert.Config
         private static ConfigEntry<bool> _enableQueuedWorkerAssignments;
         private static ConfigEntry<bool> _showIngredientWheelBuildingStock;
         private static ConfigEntry<bool> _showEmbarkationCostRanges;
+        private static ConfigEntry<bool> _showTradeRouteProfit;
         private static ConfigEntry<bool> _seasonEndingTradeRoutesAlert;
         private static ConfigEntry<bool> _autoAdjustProductionLimits;
         private static ConfigEntry<bool> _autoAdjustPurgingFire;
         private static ConfigEntry<float> _autoAdjustMultiplier;
+        private static ConfigEntry<HudHorizontalAnchor> _hudAnchor;
         private static ConfigEntry<float> _hudPositionX;
         private static ConfigEntry<float> _hudPositionY;
+
+        public enum HudHorizontalAnchor
+        {
+            Left,
+            Right
+        }
 
         public static void Load()
         {
@@ -88,6 +96,12 @@ namespace StockAlert.Config
                 false,
                 "Show embarkation bonus costs as current cost over maximum possible cost."
             );
+            _showTradeRouteProfit = _config.Bind(
+                "HUD",
+                "ShowTradeRouteProfit",
+                false,
+                "Show estimated profit on trade route offers."
+            );
             _seasonEndingTradeRoutesAlert = _config.Bind(
                 "HUD",
                 "SeasonEndingTradeRoutesAlert",
@@ -115,17 +129,23 @@ namespace StockAlert.Config
                     new AcceptableValueRange<float>(1f, 9f)
                 )
             );
+            _hudAnchor = _config.Bind(
+                "HUD",
+                "HudAnchor",
+                HudHorizontalAnchor.Right,
+                "Horizontal anchor for the Stock Alert HUD. The HUD always stays anchored to the bottom."
+            );
             _hudPositionX = _config.Bind(
                 "HUD",
                 "PositionX",
                 -1f,
-                "Saved X position for the Stock Alert HUD. Negative uses the default bottom-right anchor."
+                "Saved X position for the Stock Alert HUD. Negative uses the configured bottom anchor."
             );
             _hudPositionY = _config.Bind(
                 "HUD",
                 "PositionY",
                 -1f,
-                "Saved Y position for the Stock Alert HUD. Negative uses the default bottom-right anchor."
+                "Saved Y position for the Stock Alert HUD. Negative uses the configured bottom anchor."
             );
         }
 
@@ -180,6 +200,21 @@ namespace StockAlert.Config
                 Load();
                 _hudPositionX.Value = value.x;
                 _hudPositionY.Value = value.y;
+                _config.Save();
+            }
+        }
+
+        public static HudHorizontalAnchor HudAnchor
+        {
+            get
+            {
+                Load();
+                return _hudAnchor.Value;
+            }
+            set
+            {
+                Load();
+                _hudAnchor.Value = value;
                 _config.Save();
             }
         }
@@ -300,6 +335,21 @@ namespace StockAlert.Config
             {
                 Load();
                 _showEmbarkationCostRanges.Value = value;
+                _config.Save();
+            }
+        }
+
+        public static bool ShowTradeRouteProfit
+        {
+            get
+            {
+                Load();
+                return _showTradeRouteProfit.Value;
+            }
+            set
+            {
+                Load();
+                _showTradeRouteProfit.Value = value;
                 _config.Save();
             }
         }

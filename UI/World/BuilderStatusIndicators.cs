@@ -6,6 +6,7 @@ using System.Reflection;
 using Eremite;
 using Eremite.Characters;
 using Eremite.Characters.Villagers;
+using Eremite.Model;
 using Eremite.View.HUD;
 using StockAlert.Config;
 using StockAlert.Game;
@@ -89,6 +90,73 @@ namespace StockAlert.UI.World
         public static int GetIdleBuilderCount()
         {
             return GetBuilderVillagers().Count(villager => villager != null && villager.IsAlive() && IsVillagerIdle(villager));
+        }
+
+        public static bool HasIdleBuilderOfRace(string raceName)
+        {
+            if (string.IsNullOrWhiteSpace(raceName))
+            {
+                return false;
+            }
+
+            return GetIdleBuilderRaceIds().Contains(raceName);
+        }
+
+        public static bool HasIdleBuilderOfRace(RaceModel race)
+        {
+            if (race == null || string.IsNullOrWhiteSpace(race.Name))
+            {
+                return false;
+            }
+
+            return GetIdleBuilderRaceIds().Contains(race.Name);
+        }
+
+        public static Sprite GetIdleBuilderSprite()
+        {
+            EnsureSprites();
+            return _idleSprite;
+        }
+
+        public static IReadOnlyList<string> GetIdleBuilderRaceSummaries()
+        {
+            return GetBuilderVillagers()
+                .Where(villager => villager != null && villager.IsAlive() && IsVillagerIdle(villager))
+                .GroupBy(villager => villager.Race)
+                .OrderBy(group => GetRaceDisplayName(group.First(), group.Count()))
+                .Select(group => $"{GetRaceDisplayName(group.First(), 1)}: {group.Count()}")
+                .ToList();
+        }
+
+        private static HashSet<string> GetIdleBuilderRaceIds()
+        {
+            var raceIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var villager in GetBuilderVillagers())
+            {
+                if (villager == null || !villager.IsAlive() || !IsVillagerIdle(villager))
+                {
+                    continue;
+                }
+
+                if (!string.IsNullOrWhiteSpace(villager.Race))
+                {
+                    raceIds.Add(villager.Race);
+                }
+
+                if (!string.IsNullOrWhiteSpace(villager.raceModel?.Name))
+                {
+                    raceIds.Add(villager.raceModel.Name);
+                }
+            }
+
+            return raceIds;
+        }
+
+        private static string GetRaceDisplayName(Villager villager, int count)
+        {
+            return villager.raceModel != null
+                ? villager.raceModel.GetDisplayNameFor(count)
+                : villager.Race;
         }
 
         private static IEnumerable<Villager> GetBuilderVillagers()

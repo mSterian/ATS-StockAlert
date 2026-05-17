@@ -14,6 +14,8 @@ namespace StockAlert.Config
         private static ConfigEntry<bool> _showHud;
         private static ConfigEntry<bool> _movableHud;
         private static ConfigEntry<bool> _showBuildingAlertIndicators;
+        private static ConfigEntry<bool> _showBuildingSpecificItemIndicators;
+        private static ConfigEntry<float> _buildingShortageIconScale;
         private static ConfigEntry<bool> _showBuilderStatusIcons;
         private static ConfigEntry<bool> _showIdleBuildersAlert;
         private static ConfigEntry<bool> _enableQueuedWorkerAssignments;
@@ -65,6 +67,21 @@ namespace StockAlert.Config
                 "ShowBuildingAlertIndicators",
                 true,
                 "Show red and yellow worker markers over recipe buildings related to current shortages."
+            );
+            _showBuildingSpecificItemIndicators = _config.Bind(
+                "HUD",
+                "ShowBuildingSpecificItemIndicators",
+                true,
+                "Show shortage product icons next to building shortage indicators."
+            );
+            _buildingShortageIconScale = _config.Bind(
+                "HUD",
+                "BuildingShortageIconScale",
+                0.9f,
+                new ConfigDescription(
+                    "Scale of shortage product icons next to building shortage indicators. Range: 0.2 to 2.0.",
+                    new AcceptableValueRange<float>(0.2f, 2f)
+                )
             );
             _showBuilderStatusIcons = _config.Bind(
                 "HUD",
@@ -230,6 +247,36 @@ namespace StockAlert.Config
             {
                 Load();
                 _showBuildingAlertIndicators.Value = value;
+                _config.Save();
+            }
+        }
+
+        public static bool ShowBuildingSpecificItemIndicators
+        {
+            get
+            {
+                Load();
+                return _showBuildingSpecificItemIndicators.Value;
+            }
+            set
+            {
+                Load();
+                _showBuildingSpecificItemIndicators.Value = value;
+                _config.Save();
+            }
+        }
+
+        public static float BuildingShortageIconScale
+        {
+            get
+            {
+                Load();
+                return NormalizeBuildingShortageIconScale(_buildingShortageIconScale.Value);
+            }
+            set
+            {
+                Load();
+                _buildingShortageIconScale.Value = NormalizeBuildingShortageIconScale(value);
                 _config.Save();
             }
         }
@@ -425,6 +472,11 @@ namespace StockAlert.Config
         private static float NormalizeMultiplier(float value)
         {
             return Mathf.Clamp(Mathf.Round(value * 10f) / 10f, 1f, 9f);
+        }
+
+        private static float NormalizeBuildingShortageIconScale(float value)
+        {
+            return Mathf.Clamp(Mathf.Round(value * 100f) / 100f, 0.2f, 2f);
         }
     }
 }

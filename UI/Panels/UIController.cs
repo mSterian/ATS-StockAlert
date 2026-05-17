@@ -60,8 +60,9 @@ namespace StockAlert.UI.Panels
             private static GUIStyle _fieldStyle;
             private static GUIStyle _sectionStyle;
 
-            private Rect _windowRect = new Rect(40f, 40f, 430f, 390f);
+            private Rect _windowRect = new Rect(40f, 40f, 430f, 415f);
             private string _multiplierInput = "2.0";
+            private string _buildingShortageIconScaleInput = "0.90";
             private GameObject _clickBlockerCanvasObject;
             private RectTransform _clickBlockerRect;
 
@@ -154,6 +155,45 @@ namespace StockAlert.UI.Panels
                         BuildingAlertIndicators.RestoreVanilla();
                     }
                 }
+
+                GUILayout.BeginHorizontal();
+                GUILayout.Space(20f);
+                var specificItemIndicator = GUILayout.Toggle(
+                    ConfigManager.ShowBuildingSpecificItemIndicators,
+                    "Specific item indicator",
+                    _toggleStyle,
+                    GUILayout.Width(210f)
+                );
+                if (specificItemIndicator != ConfigManager.ShowBuildingSpecificItemIndicators)
+                {
+                    ConfigManager.ShowBuildingSpecificItemIndicators = specificItemIndicator;
+                    if (ConfigManager.ShowBuildingAlertIndicators)
+                    {
+                        BuildingAlertIndicators.Refresh();
+                    }
+                }
+
+                var previousEnabled = GUI.enabled;
+                GUI.enabled = previousEnabled && ConfigManager.ShowBuildingSpecificItemIndicators;
+                GUILayout.Label("Size", _bodyStyle, GUILayout.Width(34f));
+                var nextShortageIconScaleInput = GUILayout.TextField(_buildingShortageIconScaleInput ?? string.Empty, _fieldStyle, GUILayout.Width(64f));
+                if (nextShortageIconScaleInput != _buildingShortageIconScaleInput)
+                {
+                    _buildingShortageIconScaleInput = nextShortageIconScaleInput;
+                    if (TryParseBuildingShortageIconScale(_buildingShortageIconScaleInput, out var shortageIconScale))
+                    {
+                        ConfigManager.BuildingShortageIconScale = shortageIconScale;
+                        _buildingShortageIconScaleInput = ConfigManager.BuildingShortageIconScale.ToString("0.00");
+                        if (ConfigManager.ShowBuildingAlertIndicators)
+                        {
+                            BuildingAlertIndicators.Refresh();
+                        }
+                    }
+                }
+                GUILayout.Label("(0.20 - 2.00)", _hintStyle);
+                GUI.enabled = previousEnabled;
+                GUILayout.FlexibleSpace();
+                GUILayout.EndHorizontal();
 
                 var builderStatusIcons = GUILayout.Toggle(
                     ConfigManager.ShowBuilderStatusIcons,
@@ -310,6 +350,7 @@ namespace StockAlert.UI.Panels
             public void RefreshInputs()
             {
                 _multiplierInput = ConfigManager.AutoAdjustMultiplier.ToString("0.0");
+                _buildingShortageIconScaleInput = ConfigManager.BuildingShortageIconScale.ToString("0.00");
             }
 
             private void EnsureClickBlocker()
@@ -571,6 +612,24 @@ namespace StockAlert.UI.Panels
                 }
 
                 value = Mathf.Clamp(Mathf.Round(value * 10f) / 10f, 1f, 9f);
+                return true;
+            }
+
+            private static bool TryParseBuildingShortageIconScale(string raw, out float value)
+            {
+                value = 0f;
+                if (string.IsNullOrWhiteSpace(raw))
+                {
+                    return false;
+                }
+
+                var normalized = raw.Trim().Replace(',', '.');
+                if (!float.TryParse(normalized, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out value))
+                {
+                    return false;
+                }
+
+                value = Mathf.Clamp(Mathf.Round(value * 100f) / 100f, 0.2f, 2f);
                 return true;
             }
         }

@@ -16,12 +16,20 @@ namespace StockAlert.UI.World
 {
     internal static class BuildingAlertIndicators
     {
+        private const int MaxProductIcons = 4;
+        private const int ProductIconGridRows = 2;
+        private const float ProductIconBorderThicknessScale = 0.08f;
+        private const string ProductIconBorderRootName = "IngredientBlockedBorder";
+        private const string ProductIconsRootName = "StockAlertProductIcons";
+
         private static readonly Color WhiteColor = Color.white;
         private static readonly Color RedColor = new Color(1f, 0.25f, 0.25f, 1f);
         private static readonly Color YellowColor = new Color(1f, 0.85f, 0.2f, 1f);
+        private static readonly Color BorderRedColor = new Color(0.62f, 0.04f, 0.04f, 1f);
 
         private static readonly Dictionary<int, IndicatorSnapshot> LastApplied =
             new Dictionary<int, IndicatorSnapshot>();
+        private static Sprite _solidSprite;
 
         public static void Refresh()
         {
@@ -65,6 +73,7 @@ namespace StockAlert.UI.World
             var removed = LastApplied.Keys.Where(id => !seenBuildings.Contains(id)).ToList();
             foreach (var id in removed)
             {
+                RemoveProductIcons(id);
                 LastApplied.Remove(id);
             }
         }
@@ -115,10 +124,12 @@ namespace StockAlert.UI.World
                              building.CountWorkers() == 0;
 
                 icon.SetActive(active);
-                foreach (var spriteRenderer in icon.GetComponentsInChildren<SpriteRenderer>(true))
+                foreach (var spriteRenderer in GetBaseIconRenderers(icon))
                 {
                     spriteRenderer.color = WhiteColor;
                 }
+
+                DestroyProductIcons(icon);
             }
 
             LastApplied.Clear();
@@ -148,7 +159,8 @@ namespace StockAlert.UI.World
             MakeIconClickThrough(icon);
             var workerCount = building.CountWorkers();
             var maxWorkers = building.Workplaces?.Length ?? 0;
-            var hasRelevantLowRecipe = workshop.Recipes.Any(r => IsEnabledLowRecipe(r, lowGoods));
+            var lowProductGoods = GetEnabledLowRecipeGoods(workshop, lowGoods);
+            var hasRelevantLowRecipe = lowProductGoods.Count > 0;
             var hasRelevantIngredientSupplyRecipe = workshop.Recipes.Any(r => IsEnabledGatheringSupplyRecipe(r, blockedIngredientGoods, settings));
             var hasRelevantWork = hasRelevantLowRecipe || hasRelevantIngredientSupplyRecipe;
 
@@ -166,7 +178,13 @@ namespace StockAlert.UI.World
                 color = YellowColor;
             }
 
-            ApplySnapshot(building.Id, icon, active, color);
+            ApplySnapshot(
+                building.Id,
+                icon,
+                active,
+                color,
+                active && hasRelevantLowRecipe && ConfigManager.ShowBuildingSpecificItemIndicators ? lowProductGoods : null
+            );
         }
 
         private static void ApplyGatheringIndicatorState(ProductionBuilding building, HashSet<string> blockedIngredientGoods)
@@ -196,7 +214,7 @@ namespace StockAlert.UI.World
                 color = YellowColor;
             }
 
-            ApplySnapshot(building.Id, icon, active, color);
+            ApplySnapshot(building.Id, icon, active, color, null);
         }
 
         private static bool HasRelevantGatheringRecipe(ProductionBuilding building, HashSet<string> blockedIngredientGoods)
@@ -270,9 +288,9 @@ namespace StockAlert.UI.World
             }
         }
 
-        private static void ApplySnapshot(int buildingId, GameObject icon, bool active, Color color)
+        private static void ApplySnapshot(int buildingId, GameObject icon, bool active, Color color, IReadOnlyList<string> productGoodIds)
         {
-            var snapshot = new IndicatorSnapshot(active, color);
+            var snapshot = new IndicatorSnapshot(active, color, productGoodIds);
             var currentActive = icon.activeSelf;
             var currentColor = GetCurrentIconColor(icon);
             if (LastApplied.TryGetValue(buildingId, out var previous)
@@ -284,11 +302,12 @@ namespace StockAlert.UI.World
             }
 
             icon.SetActive(active);
-            foreach (var spriteRenderer in icon.GetComponentsInChildren<SpriteRenderer>(true))
+            foreach (var spriteRenderer in GetBaseIconRenderers(icon))
             {
                 spriteRenderer.color = color;
             }
 
+            ApplyProductIcons(buildingId, icon, active ? productGoodIds : null);
             LastApplied[buildingId] = snapshot;
         }
 
@@ -299,8 +318,298 @@ namespace StockAlert.UI.World
                 return Color.clear;
             }
 
-            var spriteRenderer = icon.GetComponentsInChildren<SpriteRenderer>(true).FirstOrDefault();
+            var spriteRenderer = GetBaseIconRenderers(icon).FirstOrDefault();
             return spriteRenderer != null ? spriteRenderer.color : Color.clear;
+        }
+
+        private static List<string> GetEnabledLowRecipeGoods(IWorkshop workshop, HashSet<string> lowGoods)
+        {
+            var result = new List<string>();
+            if (workshop?.Recipes == null || lowGoods == null || lowGoods.Count == 0)
+            {
+                return result;
+            }
+
+            foreach (var recipe in workshop.Recipes)
+            {
+                if (!IsEnabledLowRecipe(recipe, lowGoods) ||
+                    result.Any(g => string.Equals(g, recipe.productName, StringComparison.OrdinalIgnoreCase)))
+                {
+                    continue;
+                }
+
+                result.Add(recipe.productName);
+                if (result.Count >= MaxProductIcons)
+                {
+                    break;
+                }
+            }
+
+            return result;
+        }
+
+        private static void ApplyProductIcons(int buildingId, GameObject icon, IReadOnlyList<string> productGoodIds)
+        {
+            if (icon == null || productGoodIds == null || productGoodIds.Count == 0)
+            {
+                DestroyProductIcons(icon);
+                return;
+            }
+
+            var baseRenderer = GetBaseIconRenderers(icon).FirstOrDefault(r => r?.sprite != null);
+            if (baseRenderer == null)
+            {
+                DestroyProductIcons(icon);
+                return;
+            }
+
+            var root = GetOrCreateProductIconsRoot(icon);
+            if (root == null)
+            {
+                return;
+            }
+
+            var baseSize = GetRendererSizeInIconSpace(icon.transform, baseRenderer);
+            var baseHeight = Mathf.Max(0.01f, baseSize.y * ConfigManager.BuildingShortageIconScale);
+            const float gapRatio = 0.08f;
+            var iconSize = baseHeight / (ProductIconGridRows + (ProductIconGridRows - 1) * gapRatio);
+            var gap = iconSize * gapRatio;
+            var x = Mathf.Max(baseSize.x * 0.55f + iconSize * 0.5f, iconSize * 1.15f);
+            var shown = 0;
+
+            for (var i = 0; i < productGoodIds.Count; i++)
+            {
+                var good = Discovery.Goods
+                    .FirstOrDefault(g => string.Equals(g.Id, productGoodIds[i], StringComparison.OrdinalIgnoreCase));
+                var sprite = good?.Icon;
+                if (sprite == null)
+                {
+                    continue;
+                }
+
+                var child = GetOrCreateProductIcon(root, shown);
+                var renderer = child.GetComponent<SpriteRenderer>();
+                if (renderer == null)
+                {
+                    continue;
+                }
+
+                renderer.sprite = sprite;
+                renderer.color = WhiteColor;
+                renderer.sortingLayerName = baseRenderer.sortingLayerName;
+                renderer.sortingOrder = baseRenderer.sortingOrder + 1;
+                ApplyProductIconBorder(child, sprite, good.IsIngredientBlocked, baseRenderer);
+
+                var row = shown % ProductIconGridRows;
+                var column = shown / ProductIconGridRows;
+                var y = row == 0 ? (iconSize + gap) * 0.5f : -(iconSize + gap) * 0.5f;
+                child.transform.localPosition = new Vector3(x + column * (iconSize + gap), y, 0f);
+                child.transform.localRotation = Quaternion.identity;
+                child.transform.localScale = Vector3.one * GetScaleForHeight(sprite, iconSize);
+                child.SetActive(true);
+                shown++;
+            }
+
+            for (var i = shown; i < root.transform.childCount; i++)
+            {
+                root.transform.GetChild(i).gameObject.SetActive(false);
+            }
+
+            root.SetActive(shown > 0);
+            if (shown == 0)
+            {
+                DestroyProductIcons(icon);
+                LastApplied.Remove(buildingId);
+            }
+        }
+
+        private static GameObject GetOrCreateProductIconsRoot(GameObject icon)
+        {
+            var existing = icon.transform.Find(ProductIconsRootName);
+            if (existing != null)
+            {
+                return existing.gameObject;
+            }
+
+            var root = new GameObject(ProductIconsRootName);
+            root.transform.SetParent(icon.transform, false);
+            root.transform.localPosition = Vector3.zero;
+            root.transform.localRotation = Quaternion.identity;
+            root.transform.localScale = Vector3.one;
+            return root;
+        }
+
+        private static GameObject GetOrCreateProductIcon(GameObject root, int index)
+        {
+            while (root.transform.childCount <= index)
+            {
+                var child = new GameObject("ProductIcon");
+                child.transform.SetParent(root.transform, false);
+                var renderer = child.AddComponent<SpriteRenderer>();
+                renderer.material = new Material(Shader.Find("Sprites/Default"));
+            }
+
+            return root.transform.GetChild(index).gameObject;
+        }
+
+        private static void ApplyProductIconBorder(GameObject productIcon, Sprite sprite, bool active, SpriteRenderer baseRenderer)
+        {
+            var borderRoot = GetOrCreateProductIconBorder(productIcon);
+            if (borderRoot == null)
+            {
+                return;
+            }
+
+            borderRoot.SetActive(active);
+            if (!active || sprite == null)
+            {
+                return;
+            }
+
+            var size = sprite.bounds.size;
+            var thickness = Mathf.Max(size.y * ProductIconBorderThicknessScale, 0.01f);
+            var width = size.x + thickness * 2f;
+            var height = size.y + thickness * 2f;
+
+            ConfigureBorderPart(borderRoot.transform.Find("Top")?.GetComponent<SpriteRenderer>(), 0f, height * 0.5f - thickness * 0.5f, width, thickness, baseRenderer);
+            ConfigureBorderPart(borderRoot.transform.Find("Bottom")?.GetComponent<SpriteRenderer>(), 0f, -height * 0.5f + thickness * 0.5f, width, thickness, baseRenderer);
+            ConfigureBorderPart(borderRoot.transform.Find("Left")?.GetComponent<SpriteRenderer>(), -width * 0.5f + thickness * 0.5f, 0f, thickness, height, baseRenderer);
+            ConfigureBorderPart(borderRoot.transform.Find("Right")?.GetComponent<SpriteRenderer>(), width * 0.5f - thickness * 0.5f, 0f, thickness, height, baseRenderer);
+        }
+
+        private static GameObject GetOrCreateProductIconBorder(GameObject productIcon)
+        {
+            if (productIcon == null)
+            {
+                return null;
+            }
+
+            var existing = productIcon.transform.Find(ProductIconBorderRootName);
+            if (existing != null)
+            {
+                return existing.gameObject;
+            }
+
+            var borderRoot = new GameObject(ProductIconBorderRootName);
+            borderRoot.transform.SetParent(productIcon.transform, false);
+            borderRoot.transform.localPosition = Vector3.zero;
+            borderRoot.transform.localRotation = Quaternion.identity;
+            borderRoot.transform.localScale = Vector3.one;
+
+            CreateBorderPart(borderRoot.transform, "Top");
+            CreateBorderPart(borderRoot.transform, "Bottom");
+            CreateBorderPart(borderRoot.transform, "Left");
+            CreateBorderPart(borderRoot.transform, "Right");
+            borderRoot.SetActive(false);
+            return borderRoot;
+        }
+
+        private static void CreateBorderPart(Transform parent, string name)
+        {
+            var part = new GameObject(name);
+            part.transform.SetParent(parent, false);
+            var renderer = part.AddComponent<SpriteRenderer>();
+            renderer.sprite = GetSolidSprite();
+            renderer.material = new Material(Shader.Find("Sprites/Default"));
+        }
+
+        private static void ConfigureBorderPart(SpriteRenderer renderer, float x, float y, float width, float height, SpriteRenderer baseRenderer)
+        {
+            if (renderer == null)
+            {
+                return;
+            }
+
+            renderer.color = BorderRedColor;
+            renderer.sortingLayerName = baseRenderer.sortingLayerName;
+            renderer.sortingOrder = baseRenderer.sortingOrder + 2;
+            renderer.transform.localPosition = new Vector3(x, y, 0f);
+            renderer.transform.localRotation = Quaternion.identity;
+            renderer.transform.localScale = new Vector3(width, height, 1f);
+        }
+
+        private static Vector2 GetRendererSizeInIconSpace(Transform iconTransform, SpriteRenderer renderer)
+        {
+            if (iconTransform == null || renderer?.sprite == null)
+            {
+                return Vector2.one;
+            }
+
+            var bounds = renderer.sprite.bounds.size;
+            var width = iconTransform.InverseTransformVector(renderer.transform.TransformVector(new Vector3(bounds.x, 0f, 0f))).magnitude;
+            var height = iconTransform.InverseTransformVector(renderer.transform.TransformVector(new Vector3(0f, bounds.y, 0f))).magnitude;
+            return new Vector2(Mathf.Max(0.01f, width), Mathf.Max(0.01f, height));
+        }
+
+        private static float GetScaleForHeight(Sprite sprite, float targetHeight)
+        {
+            var height = sprite?.bounds.size.y ?? 0f;
+            return height > 0.001f ? targetHeight / height : 1f;
+        }
+
+        private static Sprite GetSolidSprite()
+        {
+            if (_solidSprite != null)
+            {
+                return _solidSprite;
+            }
+
+            const int size = 4;
+            var texture = new Texture2D(size, size, TextureFormat.ARGB32, false)
+            {
+                filterMode = FilterMode.Point,
+                wrapMode = TextureWrapMode.Clamp,
+                hideFlags = HideFlags.HideAndDontSave
+            };
+            texture.SetPixels(Enumerable.Repeat(Color.white, size * size).ToArray());
+            texture.Apply(false, true);
+            _solidSprite = Sprite.Create(texture, new Rect(0f, 0f, size, size), new Vector2(0.5f, 0.5f), size);
+            return _solidSprite;
+        }
+
+        private static IEnumerable<SpriteRenderer> GetBaseIconRenderers(GameObject icon)
+        {
+            return icon.GetComponentsInChildren<SpriteRenderer>(true)
+                .Where(r => r != null && !IsProductIconTransform(r.transform));
+        }
+
+        private static bool IsProductIconTransform(Transform transform)
+        {
+            while (transform != null)
+            {
+                if (string.Equals(transform.name, ProductIconsRootName, StringComparison.Ordinal))
+                {
+                    return true;
+                }
+
+                transform = transform.parent;
+            }
+
+            return false;
+        }
+
+        private static void RemoveProductIcons(int buildingId)
+        {
+            foreach (var workshop in GetRecipeBuildings())
+            {
+                if (workshop?.Base?.Id != buildingId)
+                {
+                    continue;
+                }
+
+                var icon = workshop.Base.BuildingView?.transform?.Find("ToRotate/UI/NoWorkersIcon")?.gameObject;
+                DestroyProductIcons(icon);
+                return;
+            }
+        }
+
+        private static void DestroyProductIcons(GameObject icon)
+        {
+            var root = icon?.transform?.Find(ProductIconsRootName);
+            if (root != null)
+            {
+                UnityEngine.Object.Destroy(root.gameObject);
+            }
         }
 
         private static bool ColorsEqual(Color a, Color b)
@@ -393,19 +702,41 @@ namespace StockAlert.UI.World
 
         private readonly struct IndicatorSnapshot : IEquatable<IndicatorSnapshot>
         {
-            public IndicatorSnapshot(bool active, Color color)
+            public IndicatorSnapshot(bool active, Color color, IReadOnlyList<string> productGoodIds)
             {
                 Active = active;
                 Color = color;
+                ShowProductIcons = ConfigManager.ShowBuildingSpecificItemIndicators;
+                ProductIconScale = ConfigManager.BuildingShortageIconScale;
+                ProductGoodsKey = productGoodIds == null || productGoodIds.Count == 0
+                    ? string.Empty
+                    : string.Join("|", productGoodIds.Select(BuildProductGoodsKey));
             }
 
             public bool Active { get; }
 
             public Color Color { get; }
 
+            public bool ShowProductIcons { get; }
+
+            public float ProductIconScale { get; }
+
+            public string ProductGoodsKey { get; }
+
             public bool Equals(IndicatorSnapshot other)
             {
-                return Active == other.Active && Color.Equals(other.Color);
+                return Active == other.Active &&
+                       Color.Equals(other.Color) &&
+                       ShowProductIcons == other.ShowProductIcons &&
+                       Mathf.Approximately(ProductIconScale, other.ProductIconScale) &&
+                       string.Equals(ProductGoodsKey, other.ProductGoodsKey, StringComparison.Ordinal);
+            }
+
+            private static string BuildProductGoodsKey(string goodId)
+            {
+                var good = Discovery.Goods
+                    .FirstOrDefault(g => string.Equals(g.Id, goodId, StringComparison.OrdinalIgnoreCase));
+                return goodId + (good?.IsIngredientBlocked == true ? ":blocked" : ":normal");
             }
         }
     }

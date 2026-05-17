@@ -29,6 +29,8 @@ It can also optionally highlight recipe buildings in the world when they have an
 - yellow when the building can help, has at least one worker, but is not fully staffed
 - normal white vanilla icon when the building is unmanned but none of its recipes are currently under threshold
 
+Building shortage indicators also show the matching shortage product icons next to the worker icon.
+
 When a good is marked red because it cannot continue production after current in-progress productions, these building indicators can also extend to gathering/source posts that can provide its missing ingredients.
 
 Integrated Builder Icon mod made by ~DGH into my mod with some changes:
@@ -64,7 +66,7 @@ If a good has no production limit, it is ignored by the mod.
 - when enabled, the mod checks how many alive villagers can consume a good and sets that good's global production limit to `consumers x multiplier`
 - the multiplier is editable in the `F8` window from `1.0` to `9.0`
 - values round up to the next whole number
-- only goods for recipes you currently have available in the settlement are adjusted
+- only goods for recipes available from unlocked blueprints are adjusted
 - disabling the option stops further automatic changes, but does not restore previous manual limits
 
 ## Purging Fire auto-adjust option

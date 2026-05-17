@@ -43,3 +43,11 @@ Against the Storm_Data/
 *.swp
 *.swo
 *~
+
+# Local diagnostics and package outputs
+TradeRouteDiagnostics/
+dist/*.zip
+dist/*.png
+dist/thunderstore/README.md
+dist/thunderstore/CHANGELOG.md
+dist/thunderstore/StockAlert.dll

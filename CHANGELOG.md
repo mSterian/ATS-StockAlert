@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.8] - 2026-05-17
+
+### Added
+- Building shortage indicators now show up to four shortage product icons next to the worker icon, with a red border when that product cannot be produced due to missing ingredients.
+
+### Changed
+- Eligible recipes for automatic production limits no longer depend on placed buildings, and now use recipes available from unlocked blueprints.
+
+### Fixed
+- Item finder no longer reveals ore veins in undiscovered glades.
+
 ## [1.1.7] - 2026-05-14
 
 ### Added

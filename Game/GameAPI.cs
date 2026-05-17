@@ -20,6 +20,8 @@ namespace StockAlert.Game
         private static PropertyInfo _piMbSettings;
         private static PropertyInfo _piStorageService;
         private static PropertyInfo _piWorkshopsService;
+        private static PropertyInfo _piGameContentService;
+        private static PropertyInfo _piRecipesService;
         private static PropertyInfo _piVillagersService;
         private static PropertyInfo _piBuildingsService;
         private static PropertyInfo _piBlightService;
@@ -33,9 +35,12 @@ namespace StockAlert.Game
         private static PropertyInfo _piDepositsService;
         private static PropertyInfo _piLakesService;
         private static PropertyInfo _piOreService;
+        private static PropertyInfo _piGladesService;
         private static MethodInfo _miGetAmount;
         private static MethodInfo _miGetGlobalLimit;
         private static MethodInfo _miSetGlobalLimit;
+        private static MethodInfo _miIsBuildingUnlocked;
+        private static MethodInfo _miGetRecipesForBuilding;
         private static MethodInfo _miGetAliveRaceAmount;
         private static MethodInfo _miGetGlobalActiveCysts;
         private static MethodInfo _miGetDefaultProfessionAmount;
@@ -45,6 +50,7 @@ namespace StockAlert.Game
         private static MethodInfo _miPause;
         private static MethodInfo _miPublishNews;
         private static MethodInfo _miRemoveNews;
+        private static MethodInfo _miIsGlade;
         private static PropertyInfo _piWorkshopLimits;
         private static PropertyInfo _piWorkshops;
         private static PropertyInfo _piBlightPosts;
@@ -628,12 +634,90 @@ namespace StockAlert.Game
 
                 AddRecipeGoodsFromDictionary(buildingsService, "Workshops", ref _piWorkshops, goods);
                 AddRecipeGoodsFromDictionary(buildingsService, "BlightPosts", ref _piBlightPosts, goods);
+
+                var settings = GetSettings();
+                if (settings != null)
+                {
+                    AddUnlockedRecipeGoodsFromModels(settings.workshops, goods);
+                    AddUnlockedRecipeGoodsFromModels(settings.blightPosts, goods);
+                }
             }
             catch (Exception)
             {
             }
 
             return goods;
+        }
+
+        private static void AddUnlockedRecipeGoodsFromModels(IEnumerable<BuildingModel> buildingModels, HashSet<string> goods)
+        {
+            if (buildingModels == null)
+            {
+                return;
+            }
+
+            foreach (var buildingModel in buildingModels)
+            {
+                if (buildingModel == null || !buildingModel.HasAccessTo() || !IsBuildingUnlocked(buildingModel))
+                {
+                    continue;
+                }
+
+                AddRecipeGoodsFromModel(buildingModel, goods);
+            }
+        }
+
+        private static void AddRecipeGoodsFromModel(BuildingModel buildingModel, HashSet<string> goods)
+        {
+            var settings = GetSettings();
+            var recipesService = GetRecipesService();
+            if (settings == null || recipesService == null)
+            {
+                return;
+            }
+
+            if (_miGetRecipesForBuilding == null)
+            {
+                _miGetRecipesForBuilding = recipesService.GetType().GetMethod("GetRecipesFor", new[] { typeof(string) });
+            }
+
+            var recipeNames = _miGetRecipesForBuilding?.Invoke(recipesService, new object[] { buildingModel.Name }) as IEnumerable<string>;
+            if (recipeNames == null)
+            {
+                return;
+            }
+
+            foreach (var recipeName in recipeNames)
+            {
+                if (string.IsNullOrWhiteSpace(recipeName))
+                {
+                    continue;
+                }
+
+                var recipe = settings.GetWorkshopRecipe(recipeName);
+                var productName = recipe?.producedGood?.Name;
+                if (!string.IsNullOrWhiteSpace(productName))
+                {
+                    goods.Add(productName);
+                }
+            }
+        }
+
+        private static bool IsBuildingUnlocked(BuildingModel buildingModel)
+        {
+            var gameContentService = GetGameContentService();
+            if (gameContentService == null)
+            {
+                return false;
+            }
+
+            if (_miIsBuildingUnlocked == null)
+            {
+                _miIsBuildingUnlocked = gameContentService.GetType().GetMethod("IsUnlocked", new[] { typeof(BuildingModel) });
+            }
+
+            var value = _miIsBuildingUnlocked?.Invoke(gameContentService, new object[] { buildingModel });
+            return value is bool isUnlocked && isUnlocked;
         }
 
         public static List<IWorkshop> GetRecipeBuildings()
@@ -714,6 +798,26 @@ namespace StockAlert.Game
             }
 
             return _piWorkshopsService?.GetValue(null, null);
+        }
+
+        private static object GetGameContentService()
+        {
+            if (_piGameContentService == null)
+            {
+                _piGameContentService = typeof(GameMB).GetProperty("GameContentService", BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
+            }
+
+            return _piGameContentService?.GetValue(null, null);
+        }
+
+        private static object GetRecipesService()
+        {
+            if (_piRecipesService == null)
+            {
+                _piRecipesService = typeof(GameMB).GetProperty("RecipesService", BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
+            }
+
+            return _piRecipesService?.GetValue(null, null);
         }
 
         private static object GetStorageService()
@@ -824,6 +928,16 @@ namespace StockAlert.Game
             }
 
             return _piOreService?.GetValue(null, null);
+        }
+
+        private static object GetGladesService()
+        {
+            if (_piGladesService == null)
+            {
+                _piGladesService = typeof(GameMB).GetProperty("GladesService", BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
+            }
+
+            return _piGladesService?.GetValue(null, null);
         }
 
         private static void AddRecipeGoodsFromDictionary(object buildingsService, string propertyName, ref PropertyInfo propertyInfo, HashSet<string> goods)
@@ -1146,7 +1260,32 @@ namespace StockAlert.Game
                     continue;
                 }
 
+                if (IsFieldInGlade(ore.Field))
+                {
+                    continue;
+                }
+
                 AddLocation(results, $"ore:{ore.Field.x}:{ore.Field.y}", ore, ore.Center, 0);
+            }
+        }
+
+        private static bool IsFieldInGlade(Vector2Int field)
+        {
+            try
+            {
+                var gladesService = GetGladesService();
+                if (gladesService == null)
+                {
+                    return false;
+                }
+
+                _miIsGlade ??= gladesService.GetType().GetMethod("IsGlade", new[] { typeof(Vector2Int) });
+                var value = _miIsGlade?.Invoke(gladesService, new object[] { field });
+                return value is bool isGlade && isGlade;
+            }
+            catch (Exception)
+            {
+                return false;
             }
         }
 

@@ -17,6 +17,8 @@ namespace StockAlert.Config
         private static ConfigEntry<bool> _showBuildingSpecificItemIndicators;
         private static ConfigEntry<float> _buildingShortageIconScale;
         private static ConfigEntry<bool> _showBuilderStatusIcons;
+        private static ConfigEntry<bool> _showIdleBuilderStatusIcons;
+        private static ConfigEntry<bool> _showBusyBuilderStatusIcons;
         private static ConfigEntry<bool> _showIdleBuildersAlert;
         private static ConfigEntry<bool> _enableQueuedWorkerAssignments;
         private static ConfigEntry<bool> _showIngredientWheelBuildingStock;
@@ -88,6 +90,18 @@ namespace StockAlert.Config
                 "ShowBuilderStatusIcons",
                 false,
                 "Show idle and working icons over free builder villagers."
+            );
+            _showIdleBuilderStatusIcons = _config.Bind(
+                "HUD",
+                "ShowIdleBuilderStatusIcons",
+                true,
+                "Show the idle-builder icon over idle free builder villagers when builder status icons are enabled."
+            );
+            _showBusyBuilderStatusIcons = _config.Bind(
+                "HUD",
+                "ShowBusyBuilderStatusIcons",
+                true,
+                "Show the busy-builder icon over working free builder villagers when builder status icons are enabled."
             );
             _showIdleBuildersAlert = _config.Bind(
                 "HUD",
@@ -292,6 +306,36 @@ namespace StockAlert.Config
             {
                 Load();
                 _showBuilderStatusIcons.Value = value;
+                _config.Save();
+            }
+        }
+
+        public static bool ShowIdleBuilderStatusIcons
+        {
+            get
+            {
+                Load();
+                return _showIdleBuilderStatusIcons.Value;
+            }
+            set
+            {
+                Load();
+                _showIdleBuilderStatusIcons.Value = value;
+                _config.Save();
+            }
+        }
+
+        public static bool ShowBusyBuilderStatusIcons
+        {
+            get
+            {
+                Load();
+                return _showBusyBuilderStatusIcons.Value;
+            }
+            set
+            {
+                Load();
+                _showBusyBuilderStatusIcons.Value = value;
                 _config.Save();
             }
         }

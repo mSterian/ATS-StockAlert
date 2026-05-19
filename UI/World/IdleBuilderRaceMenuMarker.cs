@@ -55,7 +55,7 @@ namespace StockAlert.UI.World
 
         private void Refresh()
         {
-            if (_slot == null || !ConfigManager.ShowBuilderStatusIcons)
+            if (_slot == null || !ConfigManager.ShowBuilderStatusIcons || !ConfigManager.ShowIdleBuilderStatusIcons)
             {
                 Hide();
                 return;

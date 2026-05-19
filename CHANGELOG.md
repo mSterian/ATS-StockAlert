@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.9] - 2026-05-19
+
+### Changed
+- Trade route profit now shows percentage profit compared to selling the raw material inputs at the bottom of the production chain, using live recipe output amounts from buildings including perks and showing a calculation breakdown when hovering the profit text or accept button.
+- Builder status icons now have separate F8 sub-options for idle builder icons and busy builder icons.
+
 ## [1.1.8] - 2026-05-17
 
 ### Added

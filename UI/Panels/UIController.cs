@@ -60,7 +60,7 @@ namespace StockAlert.UI.Panels
             private static GUIStyle _fieldStyle;
             private static GUIStyle _sectionStyle;
 
-            private Rect _windowRect = new Rect(40f, 40f, 430f, 415f);
+            private Rect _windowRect = new Rect(40f, 40f, 430f, 445f);
             private string _multiplierInput = "2.0";
             private string _buildingShortageIconScaleInput = "0.90";
             private GameObject _clickBlockerCanvasObject;
@@ -212,6 +212,43 @@ namespace StockAlert.UI.Panels
                         BuilderStatusIndicators.Clear();
                     }
                 }
+
+                GUILayout.BeginHorizontal();
+                GUILayout.Space(20f);
+                var previousBuilderChildrenEnabled = GUI.enabled;
+                GUI.enabled = previousBuilderChildrenEnabled && ConfigManager.ShowBuilderStatusIcons;
+                var idleBuilderStatusIcons = GUILayout.Toggle(
+                    ConfigManager.ShowIdleBuilderStatusIcons,
+                    "Idle builders",
+                    _toggleStyle,
+                    GUILayout.Width(160f)
+                );
+                if (idleBuilderStatusIcons != ConfigManager.ShowIdleBuilderStatusIcons)
+                {
+                    ConfigManager.ShowIdleBuilderStatusIcons = idleBuilderStatusIcons;
+                    if (ConfigManager.ShowBuilderStatusIcons)
+                    {
+                        BuilderStatusIndicators.Refresh();
+                    }
+                }
+
+                var busyBuilderStatusIcons = GUILayout.Toggle(
+                    ConfigManager.ShowBusyBuilderStatusIcons,
+                    "Busy builders",
+                    _toggleStyle,
+                    GUILayout.Width(160f)
+                );
+                if (busyBuilderStatusIcons != ConfigManager.ShowBusyBuilderStatusIcons)
+                {
+                    ConfigManager.ShowBusyBuilderStatusIcons = busyBuilderStatusIcons;
+                    if (ConfigManager.ShowBuilderStatusIcons)
+                    {
+                        BuilderStatusIndicators.Refresh();
+                    }
+                }
+                GUI.enabled = previousBuilderChildrenEnabled;
+                GUILayout.FlexibleSpace();
+                GUILayout.EndHorizontal();
 
                 var idleBuildersAlert = GUILayout.Toggle(
                     ConfigManager.ShowIdleBuildersAlert,

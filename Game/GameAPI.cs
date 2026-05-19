@@ -32,6 +32,8 @@ namespace StockAlert.Game
         private static PropertyInfo _piTimeScaleService;
         private static PropertyInfo _piNewsService;
         private static PropertyInfo _piResourcesService;
+        private static PropertyInfo _piEffectsService;
+        private static PropertyInfo _piStateService;
         private static PropertyInfo _piDepositsService;
         private static PropertyInfo _piLakesService;
         private static PropertyInfo _piOreService;
@@ -58,6 +60,22 @@ namespace StockAlert.Game
         private static PropertyInfo _piCamps;
         private static FieldInfo _fiCurrentNews;
         private static PropertyInfo _piReactiveValue;
+
+        public sealed class AvailableWorkshopRecipe
+        {
+            public AvailableWorkshopRecipe(WorkshopRecipeModel recipe, ProductionBuilding sourceBuilding, BuildingModel sourceModel)
+            {
+                Recipe = recipe;
+                SourceBuilding = sourceBuilding;
+                SourceModel = sourceModel;
+            }
+
+            public WorkshopRecipeModel Recipe { get; }
+
+            public ProductionBuilding SourceBuilding { get; }
+
+            public BuildingModel SourceModel { get; }
+        }
 
         public static Settings GetSettings()
         {
@@ -649,6 +667,47 @@ namespace StockAlert.Game
             return goods;
         }
 
+        public static List<AvailableWorkshopRecipe> GetAvailableWorkshopRecipes()
+        {
+            var recipes = new List<AvailableWorkshopRecipe>();
+
+            try
+            {
+                var settings = GetSettings();
+                if (settings == null)
+                {
+                    return recipes;
+                }
+
+                var constructedModels = new HashSet<BuildingModel>();
+                foreach (var workshop in GetRecipeBuildings())
+                {
+                    if (workshop?.Recipes == null)
+                    {
+                        continue;
+                    }
+
+                    if (workshop.BaseModel != null)
+                    {
+                        constructedModels.Add(workshop.BaseModel);
+                    }
+
+                    foreach (var recipeState in workshop.Recipes)
+                    {
+                        AddAvailableWorkshopRecipe(settings.GetWorkshopRecipe(recipeState.model), workshop.Base, workshop.BaseModel, recipes);
+                    }
+                }
+
+                AddUnlockedWorkshopRecipesFromModels(settings.workshops, recipes, constructedModels);
+                AddUnlockedWorkshopRecipesFromModels(settings.blightPosts, recipes, constructedModels);
+            }
+            catch (Exception)
+            {
+            }
+
+            return recipes;
+        }
+
         private static void AddUnlockedRecipeGoodsFromModels(IEnumerable<BuildingModel> buildingModels, HashSet<string> goods)
         {
             if (buildingModels == null)
@@ -665,6 +724,163 @@ namespace StockAlert.Game
 
                 AddRecipeGoodsFromModel(buildingModel, goods);
             }
+        }
+
+        public static int GetEffectiveWorkshopRecipeOutput(AvailableWorkshopRecipe availableRecipe)
+        {
+            var recipe = availableRecipe?.Recipe;
+            var baseAmount = recipe?.producedGood?.amount ?? 0;
+            var goodName = recipe?.producedGood?.Name;
+            if (recipe == null || string.IsNullOrWhiteSpace(goodName) || baseAmount <= 0)
+            {
+                return 0;
+            }
+
+            try
+            {
+                var baseProduction = new Good(goodName, baseAmount);
+                var effectsService = GetEffectsService();
+                var sourceBuilding = availableRecipe.SourceBuilding;
+                if (effectsService != null && sourceBuilding != null)
+                {
+                    var method = effectsService.GetType().GetMethod("GetProduction", new[] { typeof(Building), typeof(Good), typeof(RecipeModel), typeof(bool) });
+                    if (method?.Invoke(effectsService, new object[] { sourceBuilding, baseProduction, recipe, false }) is Good result)
+                    {
+                        return result.amount;
+                    }
+                }
+
+                var effects = GetEffectsState();
+                var amount = baseAmount + GetSafe(effects?.rawGoodsProductionBonus, goodName);
+                var factor = 1f;
+                var buildingName = availableRecipe.SourceModel?.Name ?? availableRecipe.SourceBuilding?.ModelName;
+                if (!string.IsNullOrWhiteSpace(buildingName))
+                {
+                    factor += GetSafe(effects?.buildingPercentageProductionBonus, buildingName);
+                }
+
+                foreach (var tag in recipe.tags ?? Array.Empty<ModelTag>())
+                {
+                    factor += GetSafe(effects?.recipesTagsPercentageProductionBonus, tag?.Name);
+                }
+
+                return Math.Max(0, (int)Math.Round(amount * factor, MidpointRounding.AwayFromZero));
+            }
+            catch (Exception)
+            {
+                return baseAmount;
+            }
+        }
+
+        private static object GetEffectsService()
+        {
+            if (_piEffectsService == null)
+            {
+                _piEffectsService = typeof(GameMB).GetProperty("EffectsService", BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
+            }
+
+            return _piEffectsService?.GetValue(null, null);
+        }
+
+        private static EffectsState GetEffectsState()
+        {
+            if (_piStateService == null)
+            {
+                _piStateService = typeof(GameMB).GetProperty("StateService", BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
+            }
+
+            var stateService = _piStateService?.GetValue(null, null);
+            return stateService?.GetType().GetProperty("Effects")?.GetValue(stateService, null) as EffectsState;
+        }
+
+        private static int GetSafe(Dictionary<string, int> values, string key)
+        {
+            return !string.IsNullOrWhiteSpace(key) && values != null && values.TryGetValue(key, out var value)
+                ? value
+                : 0;
+        }
+
+        private static float GetSafe(Dictionary<string, float> values, string key)
+        {
+            return !string.IsNullOrWhiteSpace(key) && values != null && values.TryGetValue(key, out var value)
+                ? value
+                : 0f;
+        }
+
+        private static void AddUnlockedWorkshopRecipesFromModels(IEnumerable<BuildingModel> buildingModels, List<AvailableWorkshopRecipe> recipes, HashSet<BuildingModel> constructedModels)
+        {
+            if (buildingModels == null)
+            {
+                return;
+            }
+
+            foreach (var buildingModel in buildingModels)
+            {
+                if (buildingModel == null || !buildingModel.HasAccessTo() || !IsBuildingUnlocked(buildingModel))
+                {
+                    continue;
+                }
+
+                if (constructedModels != null && constructedModels.Contains(buildingModel))
+                {
+                    continue;
+                }
+
+                AddWorkshopRecipesFromModel(buildingModel, recipes);
+            }
+        }
+
+        private static void AddWorkshopRecipesFromModel(BuildingModel buildingModel, List<AvailableWorkshopRecipe> recipes)
+        {
+            var settings = GetSettings();
+            var recipesService = GetRecipesService();
+            if (settings == null || recipesService == null)
+            {
+                return;
+            }
+
+            if (_miGetRecipesForBuilding == null)
+            {
+                _miGetRecipesForBuilding = recipesService.GetType().GetMethod("GetRecipesFor", new[] { typeof(string) });
+            }
+
+            var recipeNames = _miGetRecipesForBuilding?.Invoke(recipesService, new object[] { buildingModel.Name }) as IEnumerable<string>;
+            if (recipeNames == null)
+            {
+                return;
+            }
+
+            foreach (var recipeName in recipeNames)
+            {
+                if (string.IsNullOrWhiteSpace(recipeName))
+                {
+                    continue;
+                }
+
+                AddAvailableWorkshopRecipe(settings.GetWorkshopRecipe(recipeName), null, buildingModel, recipes);
+            }
+        }
+
+        private static void AddAvailableWorkshopRecipe(WorkshopRecipeModel recipe, List<AvailableWorkshopRecipe> recipes)
+        {
+            AddAvailableWorkshopRecipe(recipe, null, null, recipes);
+        }
+
+        private static void AddAvailableWorkshopRecipe(WorkshopRecipeModel recipe, ProductionBuilding sourceBuilding, BuildingModel sourceModel, List<AvailableWorkshopRecipe> recipes)
+        {
+            if (recipe == null || string.IsNullOrWhiteSpace(recipe.Name) || recipes == null)
+            {
+                return;
+            }
+
+            if (recipes.Any(r =>
+                    string.Equals(r.Recipe?.Name, recipe.Name, StringComparison.OrdinalIgnoreCase) &&
+                    string.Equals(r.SourceModel?.Name, sourceModel?.Name, StringComparison.OrdinalIgnoreCase)))
+            {
+                return;
+            }
+
+            recipes.Add(new AvailableWorkshopRecipe(recipe, sourceBuilding, sourceModel));
         }
 
         private static void AddRecipeGoodsFromModel(BuildingModel buildingModel, HashSet<string> goods)

@@ -53,13 +53,14 @@ namespace StockAlert.UI.World
                     continue;
                 }
 
-                seenVillagers.Add(villager.Id);
-                var sprite = IsVillagerIdle(villager) ? _idleSprite : _builderSprite;
+                var isIdle = IsVillagerIdle(villager);
+                var sprite = GetStatusSprite(isIdle);
                 if (sprite == null)
                 {
                     continue;
                 }
 
+                seenVillagers.Add(villager.Id);
                 if (!ActiveIndicators.TryGetValue(villager.Id, out var indicator))
                 {
                     indicator = new BuilderIndicator(villager);
@@ -75,6 +76,16 @@ namespace StockAlert.UI.World
                 ActiveIndicators[removedId].Destroy();
                 ActiveIndicators.Remove(removedId);
             }
+        }
+
+        private static Sprite GetStatusSprite(bool isIdle)
+        {
+            if (isIdle)
+            {
+                return ConfigManager.ShowIdleBuilderStatusIcons ? _idleSprite : null;
+            }
+
+            return ConfigManager.ShowBusyBuilderStatusIcons ? _builderSprite : null;
         }
 
         public static void Clear()

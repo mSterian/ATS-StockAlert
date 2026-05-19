@@ -18,7 +18,7 @@ It can also optionally show how much of each insufficient ingredient is currentl
 
 It can also optionally show the embarkation bonus cost range on the top-left and the current cost on the top-right, colored by where it falls in the possible range.
 
-It can also optionally show estimated profit per good on trade route offers, based on final amber reward minus the current trader sell value of the materials and packs of provisions.
+It can also optionally show estimated trade route profit as a percentage compared to selling the raw material inputs at the bottom of the production chain.
 
 It can also show an overlay for finding items by Ctrl+clicking an item's icon. The overlay appears above buildings, events, and resource nodes that contain or provide that item.
 
@@ -57,7 +57,7 @@ If a good has no production limit, it is ignored by the mod.
 9. Optional: enable queued worker assignments in the `F8` window, then Ctrl+click a race portrait to reserve that race for a worker slot until the next vacancy.
 10. Optional: enable ingredient wheel building stock in the `F8` window to show how much of each insufficient ingredient is currently sitting in non-warehouse buildings.
 11. Optional: enable embarkation cost ranges in the `F8` window to show the possible cost range and current cost on embarkation bonuses.
-12. Optional: enable trade route profit in the `F8` window to show estimated profit per good on trade route offers.
+12. Optional: enable trade route profit in the `F8` window to show estimated percentage profit on trade route offers.
 13. Ctrl+click an item's icon to show an overlay over buildings, events, and resource nodes that contain or provide that item.
 
 ## Auto-adjust option
@@ -101,9 +101,12 @@ If a good has no production limit, it is ignored by the mod.
 ## Trade route profit
 
 - off by default
-- when enabled, trade route offers show estimated profit per good next to the travel time
-- profit is calculated as final amber reward minus the current trader sell value of the materials and packs of provisions
-- the displayed value divides that total profit by the number of goods sent
+- when enabled, trade route offers show estimated percentage profit next to the travel time
+- profit is calculated as final amber reward minus the estimated production cost of the materials and packs of provisions
+- production cost uses the cheapest available recipe chain from unlocked blueprints, following the chain down to raw material inputs
+- recipe costs use the live recipe output amounts shown in buildings, including perks and other production bonuses, falling back to trader sell value for raw or unavailable goods
+- the displayed percentage compares total route profit to the trader sell value of the raw inputs used by that recipe path
+- hover the profit text or accept button to see the calculation breakdown
 - trade route reward, packs of provisions, and trader sell value modifiers are included
 - travel time is not converted into profit
 

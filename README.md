@@ -29,9 +29,11 @@ It can also optionally highlight recipe buildings in the world when they have an
 - yellow when the building can help, has at least one worker, but is not fully staffed
 - normal white vanilla icon when the building is unmanned but none of its recipes are currently under threshold
 
-Building shortage indicators also show the matching shortage product icons next to the worker icon.
+Building shortage indicators also show the matching shortage product icons next to the worker icon, and also mark farms when fields in range need seasonal work.
 
 When a good is marked red because it cannot continue production after current in-progress productions, these building indicators can also extend to gathering/source posts that can provide its missing ingredients.
+
+Warehouses with assigned haulers show a small hauler indicator with the current hauler count.
 
 Integrated Builder Icon mod made by ~DGH into my mod with some changes:
 - the exclamation marker for builders that are idling
@@ -105,8 +107,9 @@ If a good has no production limit, it is ignored by the mod.
 - profit is calculated as final amber reward minus the estimated production cost of the materials and packs of provisions
 - production cost uses the cheapest available recipe chain from unlocked blueprints, following the chain down to raw material inputs
 - recipe costs use the live recipe output amounts shown in buildings, including perks and other production bonuses, falling back to trader sell value for raw or unavailable goods
+- the trade routes screen has an `Available inputs` option to only use recipe chains that can currently be crafted from available raw ingredients
 - the displayed percentage compares total route profit to the trader sell value of the raw inputs used by that recipe path
-- hover the profit text or accept button to see the calculation breakdown
+- hover the profit text to see the calculation breakdown
 - trade route reward, packs of provisions, and trader sell value modifiers are included
 - travel time is not converted into profit
 

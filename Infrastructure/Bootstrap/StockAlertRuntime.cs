@@ -2,6 +2,7 @@ using UnityEngine;
 using StockAlert.Config;
 using StockAlert.Game;
 using StockAlert.Game.Discovery;
+using Eremite.Model;
 using Eremite.Model.State;
 using PanelUI = StockAlert.UI.Panels.UI;
 using SAPlugin = StockAlert.Infrastructure.Plugin.Plugin;
@@ -19,6 +20,7 @@ namespace StockAlert.Infrastructure.Bootstrap
         private float _nextItemLocatorRefreshTime;
         private bool _seasonEndingAlertShown;
         private GameDate _seasonEndingAlertDate;
+        private News _seasonEndingAlertNews;
         private bool _wasGameActive;
 
         public static void Initialize()
@@ -56,11 +58,11 @@ namespace StockAlert.Infrastructure.Bootstrap
 
                 _wasGameActive = false;
                 BuilderStatusIndicators.Clear();
+                WarehouseHaulerIndicators.Clear();
                 IdleBuildersAlert.Clear();
                 WorkerAssignmentQueue.ClearAll();
                 ItemLocatorOverlay.Clear();
-                _seasonEndingAlertShown = false;
-                _seasonEndingAlertDate = default;
+                ClearSeasonEndingTradeRoutesAlert();
                 return;
             }
 
@@ -79,6 +81,7 @@ namespace StockAlert.Infrastructure.Bootstrap
             {
                 _nextBuilderStatusRefreshTime = Time.unscaledTime + 0.5f;
                 BuilderStatusIndicators.Refresh();
+                WarehouseHaulerIndicators.Refresh();
                 IdleBuildersAlert.Refresh();
             }
 
@@ -118,14 +121,14 @@ namespace StockAlert.Infrastructure.Bootstrap
         {
             if (!ConfigManager.SeasonEndingTradeRoutesAlert)
             {
-                _seasonEndingAlertShown = false;
-                _seasonEndingAlertDate = default;
+                ClearSeasonEndingTradeRoutesAlert();
                 return;
             }
 
             var currentDate = GameAPI.GetCurrentGameDate();
             if (!currentDate.Equals(_seasonEndingAlertDate))
             {
+                RemoveSeasonEndingTradeRoutesAlertNews();
                 _seasonEndingAlertDate = currentDate;
                 _seasonEndingAlertShown = false;
             }
@@ -141,9 +144,27 @@ namespace StockAlert.Infrastructure.Bootstrap
                 return;
             }
 
-            GameAPI.PublishNews("Season ending! Check trade routes.");
+            _seasonEndingAlertNews = GameAPI.PublishNews("Season ending! Check trade routes.");
             GameAPI.PauseGame();
             _seasonEndingAlertShown = true;
+        }
+
+        private void ClearSeasonEndingTradeRoutesAlert()
+        {
+            RemoveSeasonEndingTradeRoutesAlertNews();
+            _seasonEndingAlertShown = false;
+            _seasonEndingAlertDate = default;
+        }
+
+        private void RemoveSeasonEndingTradeRoutesAlertNews()
+        {
+            if (_seasonEndingAlertNews == null)
+            {
+                return;
+            }
+
+            GameAPI.RemoveNews(_seasonEndingAlertNews);
+            _seasonEndingAlertNews = null;
         }
     }
 }

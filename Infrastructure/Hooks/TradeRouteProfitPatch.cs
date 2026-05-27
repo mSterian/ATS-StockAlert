@@ -27,14 +27,34 @@ namespace StockAlert.Infrastructure.Hooks
         private static readonly FieldInfo TimeTextField = AccessTools.Field(typeof(TownOfferSlot), "timeText");
         private static readonly FieldInfo ButtonField = AccessTools.Field(typeof(TownOfferSlot), "button");
         private static readonly FieldInfo ButtonTriggerField = AccessTools.Field(typeof(TownOfferSlot), "buttonTrigger");
-        private static readonly MethodInfo GetButtonTooltipDescMethod = AccessTools.Method(typeof(TownOfferSlot), "GetButtonTooltipDesc");
+        private static readonly FieldInfo OnlyAvailableToggleField = AccessTools.Field(typeof(TradeRoutesPopup), "onlyAvailableToggle");
+        private static readonly MethodInfo SetUpOffersMethod = AccessTools.Method(typeof(TradeRoutesPopup), "SetUpOffers");
         private static readonly PropertyInfo EffectsServiceProperty = AccessTools.Property(typeof(GameMB), "EffectsService");
         private static readonly PropertyInfo TradeServiceProperty = AccessTools.Property(typeof(GameMB), "TradeService");
         private const int MaxCostDepth = 24;
         private const float ProfitModelTooltipBottomPadding = 18f;
+        private const string RawMaterialsToggleName = "StockAlertRawMaterialsProfitToggle";
         private static MethodInfo _getTradeRoutesRewardsMethod;
         private static MethodInfo _getTradeRoutesFuelMethod;
         private static MethodInfo _getValueInCurrencyMethod;
+
+        [HarmonyPatch(typeof(TradeRoutesPopup), "Show")]
+        [HarmonyPostfix]
+        private static void AddRawMaterialsToggleToTradeRoutesPopup(TradeRoutesPopup __instance)
+        {
+            if (__instance == null)
+            {
+                return;
+            }
+
+            try
+            {
+                EnsureRawMaterialsToggle(__instance);
+            }
+            catch (Exception)
+            {
+            }
+        }
 
         [HarmonyPatch(typeof(TownOfferSlot), "SetUpTexts")]
         [HarmonyPostfix]
@@ -69,7 +89,7 @@ namespace StockAlert.Infrastructure.Hooks
         [HarmonyPostfix]
         private static void UpdateProfitTooltip(TownOfferSlot __instance)
         {
-            if (!ConfigManager.ShowTradeRouteProfit || __instance == null)
+            if (__instance == null)
             {
                 return;
             }
@@ -79,10 +99,9 @@ namespace StockAlert.Infrastructure.Hooks
                 var trigger = ButtonTriggerField?.GetValue(__instance) as SimpleTooltipRemoteTrigger;
                 if (trigger != null)
                 {
-                    trigger.enabled = false;
+                    var button = ButtonField?.GetValue(__instance) as Button;
+                    trigger.enabled = button == null || !button.interactable;
                 }
-
-                SetUpProfitModelTooltip(__instance, ButtonField?.GetValue(__instance) as Component);
             }
             catch (Exception)
             {
@@ -123,17 +142,6 @@ namespace StockAlert.Infrastructure.Hooks
         {
             var state = StateField?.GetValue(slot) as TownOfferState;
             var builder = new StringBuilder();
-            var button = ButtonField?.GetValue(slot) as Button;
-            if (button != null && !button.interactable)
-            {
-                var vanillaDesc = GetButtonTooltipDescMethod?.Invoke(slot, null) as string;
-                if (!string.IsNullOrWhiteSpace(vanillaDesc))
-                {
-                    builder.AppendLine(vanillaDesc);
-                    builder.AppendLine();
-                }
-            }
-
             if (!TryCalculateProfit(state, out var calculation))
             {
                 builder.Append("Profit calculation unavailable.");
@@ -186,8 +194,9 @@ namespace StockAlert.Infrastructure.Hooks
             var reward = ApplyTradeRouteRewardEffects(new Good(currency.Name, state.price));
             var fuel = ApplyTradeRouteFuelEffects(new Good(fuelModel.Name, state.fuel));
             var availableRecipes = GameAPI.GetAvailableWorkshopRecipes();
-            var materialCost = ResolveCost(state.good.name, new HashSet<string>(StringComparer.OrdinalIgnoreCase), availableRecipes, 0);
-            var fuelCost = ResolveCost(fuel.name, new HashSet<string>(StringComparer.OrdinalIgnoreCase), availableRecipes, 0);
+            var requireAvailableRaw = ConfigManager.TradeRouteProfitRequireAvailableRawMaterials;
+            var materialCost = ResolveCost(state.good.name, new HashSet<string>(StringComparer.OrdinalIgnoreCase), availableRecipes, 0, requireAvailableRaw);
+            var fuelCost = ResolveCost(fuel.name, new HashSet<string>(StringComparer.OrdinalIgnoreCase), availableRecipes, 0, requireAvailableRaw);
             if (materialCost == null || fuelCost == null)
             {
                 return false;
@@ -218,7 +227,7 @@ namespace StockAlert.Infrastructure.Hooks
             return true;
         }
 
-        private static CostResult ResolveCost(string goodName, HashSet<string> chain, List<GameAPI.AvailableWorkshopRecipe> availableRecipes, int depth)
+        private static CostResult ResolveCost(string goodName, HashSet<string> chain, List<GameAPI.AvailableWorkshopRecipe> availableRecipes, int depth, bool requireAvailableRaw)
         {
             if (string.IsNullOrWhiteSpace(goodName))
             {
@@ -238,7 +247,7 @@ namespace StockAlert.Infrastructure.Hooks
             CostResult best = null;
             foreach (var availableRecipe in recipes)
             {
-                var recipeCost = ResolveRecipeCost(availableRecipe, chain, availableRecipes, depth + 1);
+                var recipeCost = ResolveRecipeCost(availableRecipe, chain, availableRecipes, depth + 1, requireAvailableRaw);
                 if (recipeCost == null)
                 {
                     continue;
@@ -260,7 +269,7 @@ namespace StockAlert.Infrastructure.Hooks
             return best ?? CostResult.Raw(goodName, GetTraderSellValueInAmber(goodName, 1));
         }
 
-        private static CostResult ResolveRecipeCost(GameAPI.AvailableWorkshopRecipe availableRecipe, HashSet<string> chain, List<GameAPI.AvailableWorkshopRecipe> availableRecipes, int depth)
+        private static CostResult ResolveRecipeCost(GameAPI.AvailableWorkshopRecipe availableRecipe, HashSet<string> chain, List<GameAPI.AvailableWorkshopRecipe> availableRecipes, int depth, bool requireAvailableRaw)
         {
             var recipe = availableRecipe?.Recipe;
             var outputAmount = GameAPI.GetEffectiveWorkshopRecipeOutput(availableRecipe);
@@ -273,9 +282,14 @@ namespace StockAlert.Infrastructure.Hooks
             var ingredients = new List<CostIngredient>();
             foreach (var set in recipe.requiredGoods ?? Array.Empty<GoodsSet>())
             {
-                var selected = ResolveCheapestIngredient(set, chain, availableRecipes, depth);
+                var selected = ResolveCheapestIngredient(set, chain, availableRecipes, depth, requireAvailableRaw);
                 if (selected == null)
                 {
+                    if (set?.goods != null && set.goods.Length > 0)
+                    {
+                        return null;
+                    }
+
                     continue;
                 }
 
@@ -288,10 +302,16 @@ namespace StockAlert.Infrastructure.Hooks
                 ingredients.Add(selected);
             }
 
-            return CostResult.FromRecipe(recipe, totalCost / outputAmount, totalCost, outputAmount, ingredients);
+            var rawRequirements = GetRawRequirementsForRecipeBatch(ingredients);
+            if (requireAvailableRaw && !HasEnoughRawInputs(rawRequirements))
+            {
+                return null;
+            }
+
+            return CostResult.FromRecipe(recipe, totalCost / outputAmount, totalCost, outputAmount, ingredients, rawRequirements);
         }
 
-        private static CostIngredient ResolveCheapestIngredient(GoodsSet set, HashSet<string> chain, List<GameAPI.AvailableWorkshopRecipe> availableRecipes, int depth)
+        private static CostIngredient ResolveCheapestIngredient(GoodsSet set, HashSet<string> chain, List<GameAPI.AvailableWorkshopRecipe> availableRecipes, int depth, bool requireAvailableRaw)
         {
             CostIngredient best = null;
             foreach (var good in set?.goods ?? Array.Empty<GoodRef>())
@@ -301,7 +321,7 @@ namespace StockAlert.Infrastructure.Hooks
                     continue;
                 }
 
-                var cost = ResolveCost(good.Name, chain, availableRecipes, depth);
+                var cost = ResolveCost(good.Name, chain, availableRecipes, depth, requireAvailableRaw);
                 if (cost == null)
                 {
                     continue;
@@ -312,6 +332,11 @@ namespace StockAlert.Infrastructure.Hooks
                     return new CostIngredient(good.Name, good.amount, cost, 0f);
                 }
 
+                if (requireAvailableRaw && !HasEnoughRawInputs(GetRawRequirementsForIngredient(good.amount, cost)))
+                {
+                    continue;
+                }
+
                 var totalCost = cost.UnitCost * good.amount;
                 if (best == null || totalCost < best.TotalCost)
                 {
@@ -320,6 +345,69 @@ namespace StockAlert.Infrastructure.Hooks
             }
 
             return best;
+        }
+
+        private static Dictionary<string, float> GetRawRequirementsForRecipeBatch(IEnumerable<CostIngredient> ingredients)
+        {
+            var result = new Dictionary<string, float>(StringComparer.OrdinalIgnoreCase);
+            foreach (var ingredient in ingredients ?? Enumerable.Empty<CostIngredient>())
+            {
+                AddRawRequirements(result, GetRawRequirementsForIngredient(ingredient.Amount, ingredient.Cost));
+            }
+
+            return result;
+        }
+
+        private static Dictionary<string, float> GetRawRequirementsForIngredient(int amount, CostResult cost)
+        {
+            var result = new Dictionary<string, float>(StringComparer.OrdinalIgnoreCase);
+            if (cost == null || amount <= 0)
+            {
+                return result;
+            }
+
+            if (cost.Recipe == null)
+            {
+                result[cost.GoodName] = amount;
+                return result;
+            }
+
+            var cycles = cost.OutputAmount > 0
+                ? Mathf.CeilToInt((float)amount / cost.OutputAmount)
+                : 1;
+            foreach (var requirement in cost.BatchRawRequirements)
+            {
+                result[requirement.Key] = requirement.Value * cycles;
+            }
+
+            return result;
+        }
+
+        private static void AddRawRequirements(Dictionary<string, float> target, Dictionary<string, float> requirements)
+        {
+            if (target == null || requirements == null)
+            {
+                return;
+            }
+
+            foreach (var requirement in requirements)
+            {
+                target.TryGetValue(requirement.Key, out var current);
+                target[requirement.Key] = current + requirement.Value;
+            }
+        }
+
+        private static bool HasEnoughRawInputs(Dictionary<string, float> requirements)
+        {
+            foreach (var requirement in requirements ?? new Dictionary<string, float>())
+            {
+                if (GameAPI.GetStoredAmount(null, requirement.Key) + 0.001f < requirement.Value)
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         private static string BuildProfitTooltip(
@@ -489,6 +577,68 @@ namespace StockAlert.Infrastructure.Hooks
             return "#FFD95A";
         }
 
+        private static void EnsureRawMaterialsToggle(TradeRoutesPopup popup)
+        {
+            var sourceToggle = OnlyAvailableToggleField?.GetValue(popup) as ToggleButton;
+            var sourceRoot = sourceToggle != null ? sourceToggle.transform.parent as RectTransform : null;
+            var parent = sourceRoot != null ? sourceRoot.parent as RectTransform : null;
+            if (sourceRoot == null || parent == null)
+            {
+                return;
+            }
+
+            var existing = parent.Find(RawMaterialsToggleName);
+            var root = existing as RectTransform;
+            if (root == null)
+            {
+                root = UnityEngine.Object.Instantiate(sourceRoot.gameObject, parent).GetComponent<RectTransform>();
+                root.name = RawMaterialsToggleName;
+                root.SetAsLastSibling();
+            }
+
+            root.anchorMin = new Vector2(1f, sourceRoot.anchorMin.y);
+            root.anchorMax = new Vector2(1f, sourceRoot.anchorMax.y);
+            root.pivot = new Vector2(1f, sourceRoot.pivot.y);
+            root.anchoredPosition = new Vector2(-58f, sourceRoot.anchoredPosition.y);
+            root.gameObject.SetActive(ConfigManager.ShowTradeRouteProfit);
+            var toggle = root.GetComponentInChildren<ToggleButton>(true);
+            if (toggle == null)
+            {
+                return;
+            }
+
+            toggle.enabled = false;
+            foreach (var text in root.GetComponentsInChildren<TMP_Text>(true))
+            {
+                if (!string.IsNullOrWhiteSpace(text.text))
+                {
+                    text.text = "Available inputs";
+                }
+            }
+
+            toggle.SetUp(ConfigManager.TradeRouteProfitRequireAvailableRawMaterials, _ => { });
+            var button = root.GetComponentInChildren<Button>(true);
+            if (button == null)
+            {
+                return;
+            }
+
+            var trigger = button.GetComponent<SimpleTooltipRemoteTrigger>() ??
+                          button.gameObject.AddComponent<SimpleTooltipRemoteTrigger>();
+            trigger.SetUp(
+                () => "Available inputs",
+                () => "Changes the formula for the profit to use only recipes that can be crafted with available ingredients"
+            );
+            trigger.enabled = true;
+            button.onClick.RemoveAllListeners();
+            button.onClick.AddListener(() =>
+            {
+                ConfigManager.TradeRouteProfitRequireAvailableRawMaterials = !ConfigManager.TradeRouteProfitRequireAvailableRawMaterials;
+                toggle.SetUp(ConfigManager.TradeRouteProfitRequireAvailableRawMaterials, _ => { });
+                SetUpOffersMethod?.Invoke(popup, null);
+            });
+        }
+
         private sealed class ProfitCalculation
         {
             public ProfitCalculation(float profitPercent, bool hasInfiniteLoop, string tooltip)
@@ -507,7 +657,7 @@ namespace StockAlert.Infrastructure.Hooks
 
         private sealed class CostResult
         {
-            private CostResult(string goodName, float unitCost, float baseUnitValue, WorkshopRecipeModel recipe, float batchCost, float baseBatchValue, int outputAmount, List<CostIngredient> ingredients, bool hasInfiniteLoop, string loopPath)
+            private CostResult(string goodName, float unitCost, float baseUnitValue, WorkshopRecipeModel recipe, float batchCost, float baseBatchValue, int outputAmount, List<CostIngredient> ingredients, Dictionary<string, float> batchRawRequirements, bool hasInfiniteLoop, string loopPath)
             {
                 GoodName = goodName;
                 UnitCost = unitCost;
@@ -517,6 +667,7 @@ namespace StockAlert.Infrastructure.Hooks
                 BaseBatchValue = baseBatchValue;
                 OutputAmount = outputAmount;
                 Ingredients = ingredients ?? new List<CostIngredient>();
+                BatchRawRequirements = batchRawRequirements ?? new Dictionary<string, float>(StringComparer.OrdinalIgnoreCase);
                 HasInfiniteLoop = hasInfiniteLoop;
                 LoopPath = loopPath;
             }
@@ -537,24 +688,38 @@ namespace StockAlert.Infrastructure.Hooks
 
             public List<CostIngredient> Ingredients { get; }
 
+            public Dictionary<string, float> BatchRawRequirements { get; }
+
             public bool HasInfiniteLoop { get; }
 
             public string LoopPath { get; }
 
             public static CostResult Raw(string goodName, float unitCost)
             {
-                return new CostResult(goodName, unitCost, unitCost, null, 0f, unitCost, 1, null, false, null);
+                return new CostResult(
+                    goodName,
+                    unitCost,
+                    unitCost,
+                    null,
+                    0f,
+                    unitCost,
+                    1,
+                    null,
+                    new Dictionary<string, float>(StringComparer.OrdinalIgnoreCase) { [goodName] = 1f },
+                    false,
+                    null
+                );
             }
 
-            public static CostResult FromRecipe(WorkshopRecipeModel recipe, float unitCost, float batchCost, int outputAmount, List<CostIngredient> ingredients)
+            public static CostResult FromRecipe(WorkshopRecipeModel recipe, float unitCost, float batchCost, int outputAmount, List<CostIngredient> ingredients, Dictionary<string, float> batchRawRequirements)
             {
                 var baseBatchValue = ingredients?.Sum(i => i.BaseTotalValue) ?? 0f;
-                return new CostResult(recipe.producedGood.Name, unitCost, baseBatchValue / outputAmount, recipe, batchCost, baseBatchValue, outputAmount, ingredients, false, null);
+                return new CostResult(recipe.producedGood.Name, unitCost, baseBatchValue / outputAmount, recipe, batchCost, baseBatchValue, outputAmount, ingredients, batchRawRequirements, false, null);
             }
 
             public static CostResult InfiniteLoop(string goodName, IEnumerable<string> path)
             {
-                return new CostResult(goodName, 0f, 0f, null, 0f, 0f, 0, null, true, string.Join(" -> ", path.Select(GetGoodDisplayName)));
+                return new CostResult(goodName, 0f, 0f, null, 0f, 0f, 0, null, null, true, string.Join(" -> ", path.Select(GetGoodDisplayName)));
             }
         }
 

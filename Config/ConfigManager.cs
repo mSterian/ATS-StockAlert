@@ -24,6 +24,7 @@ namespace StockAlert.Config
         private static ConfigEntry<bool> _showIngredientWheelBuildingStock;
         private static ConfigEntry<bool> _showEmbarkationCostRanges;
         private static ConfigEntry<bool> _showTradeRouteProfit;
+        private static ConfigEntry<bool> _tradeRouteProfitRequireAvailableRawMaterials;
         private static ConfigEntry<bool> _seasonEndingTradeRoutesAlert;
         private static ConfigEntry<bool> _autoAdjustProductionLimits;
         private static ConfigEntry<bool> _autoAdjustPurgingFire;
@@ -132,6 +133,12 @@ namespace StockAlert.Config
                 "ShowTradeRouteProfit",
                 false,
                 "Show estimated profit on trade route offers."
+            );
+            _tradeRouteProfitRequireAvailableRawMaterials = _config.Bind(
+                "HUD",
+                "TradeRouteProfitRequireAvailableRawMaterials",
+                false,
+                "When calculating trade route profit, only use production recipe chains whose raw inputs are currently available for at least one production cycle."
             );
             _seasonEndingTradeRoutesAlert = _config.Bind(
                 "HUD",
@@ -441,6 +448,21 @@ namespace StockAlert.Config
             {
                 Load();
                 _showTradeRouteProfit.Value = value;
+                _config.Save();
+            }
+        }
+
+        public static bool TradeRouteProfitRequireAvailableRawMaterials
+        {
+            get
+            {
+                Load();
+                return _tradeRouteProfitRequireAvailableRawMaterials.Value;
+            }
+            set
+            {
+                Load();
+                _tradeRouteProfitRequireAvailableRawMaterials.Value = value;
                 _config.Save();
             }
         }

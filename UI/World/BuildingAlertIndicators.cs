@@ -70,6 +70,17 @@ namespace StockAlert.UI.World
                 ApplyGatheringIndicatorState(building, blockedIngredientGoods);
             }
 
+            foreach (var farm in GameAPI.GetFarmBuildings())
+            {
+                if (farm == null)
+                {
+                    continue;
+                }
+
+                seenBuildings.Add(farm.Id);
+                ApplyFarmIndicatorState(farm);
+            }
+
             var removed = LastApplied.Keys.Where(id => !seenBuildings.Contains(id)).ToList();
             foreach (var id in removed)
             {
@@ -103,6 +114,7 @@ namespace StockAlert.UI.World
 
         public static void RestoreVanilla()
         {
+            var restored = new HashSet<int>();
             foreach (var workshop in GetRecipeBuildings())
             {
                 var building = workshop.Base;
@@ -111,25 +123,26 @@ namespace StockAlert.UI.World
                     continue;
                 }
 
-                var icon = building.BuildingView?.transform?.Find("ToRotate/UI/NoWorkersIcon")?.gameObject;
-                if (icon == null)
+                if (restored.Add(building.Id))
                 {
-                    continue;
+                    RestoreVanillaFor(building);
                 }
+            }
 
-                MakeIconClickThrough(icon);
-                var active = building.BuildingState != null &&
-                             building.BuildingState.finished &&
-                             !building.BuildingState.isSleeping &&
-                             building.CountWorkers() == 0;
-
-                icon.SetActive(active);
-                foreach (var spriteRenderer in GetBaseIconRenderers(icon))
+            foreach (var building in GameAPI.GetGatheringSourceBuildings())
+            {
+                if (building != null && restored.Add(building.Id))
                 {
-                    spriteRenderer.color = WhiteColor;
+                    RestoreVanillaFor(building);
                 }
+            }
 
-                DestroyProductIcons(icon);
+            foreach (var farm in GameAPI.GetFarmBuildings())
+            {
+                if (farm != null && restored.Add(farm.Id))
+                {
+                    RestoreVanillaFor(farm);
+                }
             }
 
             LastApplied.Clear();
@@ -215,6 +228,36 @@ namespace StockAlert.UI.World
             }
 
             ApplySnapshot(building.Id, icon, active, color, null);
+        }
+
+        private static void ApplyFarmIndicatorState(Farm farm)
+        {
+            var icon = farm.BuildingView?.transform?.Find("ToRotate/UI/NoWorkersIcon")?.gameObject;
+            if (icon == null)
+            {
+                return;
+            }
+
+            MakeIconClickThrough(icon);
+            var workerCount = farm.CountWorkers();
+            var maxWorkers = farm.Workplaces?.Length ?? 0;
+            var hasRelevantFieldWork = GameAPI.HasFarmFieldWork(farm);
+
+            var active = false;
+            var color = WhiteColor;
+
+            if (workerCount == 0)
+            {
+                active = true;
+                color = hasRelevantFieldWork ? RedColor : WhiteColor;
+            }
+            else if (hasRelevantFieldWork && workerCount < maxWorkers)
+            {
+                active = true;
+                color = YellowColor;
+            }
+
+            ApplySnapshot(farm.Id, icon, active, color, null);
         }
 
         private static bool HasRelevantGatheringRecipe(ProductionBuilding building, HashSet<string> blockedIngredientGoods)
@@ -601,6 +644,18 @@ namespace StockAlert.UI.World
                 DestroyProductIcons(icon);
                 return;
             }
+
+            foreach (var farm in GameAPI.GetFarmBuildings())
+            {
+                if (farm?.Id != buildingId)
+                {
+                    continue;
+                }
+
+                var icon = farm.BuildingView?.transform?.Find("ToRotate/UI/NoWorkersIcon")?.gameObject;
+                DestroyProductIcons(icon);
+                return;
+            }
         }
 
         private static void DestroyProductIcons(GameObject icon)
@@ -610,6 +665,29 @@ namespace StockAlert.UI.World
             {
                 UnityEngine.Object.Destroy(root.gameObject);
             }
+        }
+
+        private static void RestoreVanillaFor(ProductionBuilding building)
+        {
+            var icon = building.BuildingView?.transform?.Find("ToRotate/UI/NoWorkersIcon")?.gameObject;
+            if (icon == null)
+            {
+                return;
+            }
+
+            MakeIconClickThrough(icon);
+            var active = building.BuildingState != null &&
+                         building.BuildingState.finished &&
+                         !building.BuildingState.isSleeping &&
+                         building.CountWorkers() == 0;
+
+            icon.SetActive(active);
+            foreach (var spriteRenderer in GetBaseIconRenderers(icon))
+            {
+                spriteRenderer.color = WhiteColor;
+            }
+
+            DestroyProductIcons(icon);
         }
 
         private static bool ColorsEqual(Color a, Color b)

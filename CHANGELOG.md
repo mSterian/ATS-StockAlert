@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.0] - 2026-05-28
+
+### Added
+- Added a trade routes screen checkbox that makes the profit calculator only use recipe chains with enough current raw inputs for at least one required production cycle.
+- Building shortage indicators now also mark farm buildings when fields in range need sowing, harvesting, or plowing.
+- Warehouses with assigned haulers now show one world indicator with the current hauler count.
+
+### Fixed
+- Season-ending trade route reminders now automatically disappear when the season changes.
+
 ## [1.1.9] - 2026-05-19
 
 ### Changed

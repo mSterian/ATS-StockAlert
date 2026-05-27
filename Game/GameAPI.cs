@@ -58,6 +58,9 @@ namespace StockAlert.Game
         private static PropertyInfo _piBlightPosts;
         private static PropertyInfo _piGathererHuts;
         private static PropertyInfo _piCamps;
+        private static PropertyInfo _piFarms;
+        private static PropertyInfo _piFarmfields;
+        private static PropertyInfo _piStorages;
         private static FieldInfo _fiCurrentNews;
         private static PropertyInfo _piReactiveValue;
 
@@ -509,6 +512,20 @@ namespace StockAlert.Game
             catch (Exception)
             {
                 return default;
+            }
+        }
+
+        public static Season? GetCurrentSeason()
+        {
+            try
+            {
+                var calendarService = GetCalendarService();
+                var prop = calendarService?.GetType().GetProperty("Season", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+                return prop?.GetValue(calendarService, null) is Season season ? season : null;
+            }
+            catch (Exception)
+            {
+                return null;
             }
         }
 
@@ -980,6 +997,113 @@ namespace StockAlert.Game
             return result;
         }
 
+        public static List<Farm> GetFarmBuildings()
+        {
+            var result = new List<ProductionBuilding>();
+
+            try
+            {
+                var buildingsService = GetBuildingsService();
+                if (buildingsService == null)
+                {
+                    return new List<Farm>();
+                }
+
+                AddProductionBuildingsFromDictionary(buildingsService, "Farms", ref _piFarms, result);
+            }
+            catch (Exception)
+            {
+            }
+
+            return result.OfType<Farm>().ToList();
+        }
+
+        public static List<Storage> GetStorageBuildings()
+        {
+            var result = new List<ProductionBuilding>();
+
+            try
+            {
+                var buildingsService = GetBuildingsService();
+                if (buildingsService == null)
+                {
+                    return new List<Storage>();
+                }
+
+                AddProductionBuildingsFromDictionary(buildingsService, "Storages", ref _piStorages, result);
+            }
+            catch (Exception)
+            {
+            }
+
+            return result.OfType<Storage>().ToList();
+        }
+
+        public static bool HasFarmFieldWork(Farm farm)
+        {
+            if (farm == null || !farm.AnyRecipeActive())
+            {
+                return false;
+            }
+
+            try
+            {
+                var season = GetCurrentSeason();
+                if (season == null)
+                {
+                    return false;
+                }
+
+                var fieldsInRange = farm.CountAllReaveleadFieldsInRange();
+                if (fieldsInRange <= 0)
+                {
+                    return false;
+                }
+
+                if (season == Season.Drizzle && farm.CountSownFieldsInRange() < fieldsInRange)
+                {
+                    return HasOpenFarmfieldMatching(farm, field => !field.IsSeeded());
+                }
+
+                if (season == Season.Clearance && farm.CountSownFieldsInRange() > 0)
+                {
+                    return HasOpenFarmfieldMatching(farm, field => field.IsSeeded());
+                }
+
+                if (season == Season.Storm && farm.CountPlownFieldsInRange() < fieldsInRange)
+                {
+                    return HasOpenFarmfieldMatching(farm, field => !field.IsPlowed());
+                }
+            }
+            catch (Exception)
+            {
+            }
+
+            return false;
+        }
+
+        private static bool HasOpenFarmfieldMatching(Farm farm, Func<Farmfield, bool> check)
+        {
+            foreach (var farmfield in GetFarmfields())
+            {
+                if (farmfield == null ||
+                    farmfield.state == null ||
+                    !farmfield.IsFinished() ||
+                    farmfield.state.currentWorker > 0 ||
+                    !farm.AreaRect.Contains(new Vector2(farmfield.Center.x, farmfield.Center.z)))
+                {
+                    continue;
+                }
+
+                if (check(farmfield))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         internal static List<TrackedItemLocation> GetTrackedItemLocations(string goodId)
         {
             var results = new Dictionary<string, TrackedItemLocation>(StringComparer.OrdinalIgnoreCase);
@@ -1227,6 +1351,30 @@ namespace StockAlert.Game
                 if (entry.Value is ProductionBuilding building)
                 {
                     buildings.Add(building);
+                }
+            }
+        }
+
+        private static IEnumerable<Farmfield> GetFarmfields()
+        {
+            var buildingsService = GetBuildingsService();
+            if (buildingsService == null)
+            {
+                yield break;
+            }
+
+            _piFarmfields ??= buildingsService.GetType().GetProperty("Farmfields", BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
+            var entries = _piFarmfields?.GetValue(buildingsService, null) as IDictionary;
+            if (entries == null)
+            {
+                yield break;
+            }
+
+            foreach (DictionaryEntry entry in entries)
+            {
+                if (entry.Value is Farmfield farmfield)
+                {
+                    yield return farmfield;
                 }
             }
         }

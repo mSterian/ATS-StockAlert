@@ -20,6 +20,7 @@ namespace StockAlert.Config
         private static ConfigEntry<bool> _showIdleBuilderStatusIcons;
         private static ConfigEntry<bool> _showBusyBuilderStatusIcons;
         private static ConfigEntry<bool> _showIdleBuildersAlert;
+        private static ConfigEntry<bool> _showBuilderDemandCounter;
         private static ConfigEntry<bool> _enableQueuedWorkerAssignments;
         private static ConfigEntry<bool> _showIngredientWheelBuildingStock;
         private static ConfigEntry<bool> _showEmbarkationCostRanges;
@@ -109,6 +110,12 @@ namespace StockAlert.Config
                 "ShowIdleBuildersAlert",
                 false,
                 "Show a persistent alert while you have idle builders."
+            );
+            _showBuilderDemandCounter = _config.Bind(
+                "HUD",
+                "ShowBuilderDemandCounter",
+                true,
+                "Show the top-left vanilla builder counter as available builders over needed builders."
             );
             _enableQueuedWorkerAssignments = _config.Bind(
                 "HUD",
@@ -358,6 +365,21 @@ namespace StockAlert.Config
             {
                 Load();
                 _showIdleBuildersAlert.Value = value;
+                _config.Save();
+            }
+        }
+
+        public static bool ShowBuilderDemandCounter
+        {
+            get
+            {
+                Load();
+                return _showBuilderDemandCounter.Value;
+            }
+            set
+            {
+                Load();
+                _showBuilderDemandCounter.Value = value;
                 _config.Save();
             }
         }

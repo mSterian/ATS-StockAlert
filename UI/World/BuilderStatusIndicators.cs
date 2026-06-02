@@ -17,6 +17,18 @@ namespace StockAlert.UI.World
 {
     internal static class BuilderStatusIndicators
     {
+        public readonly struct BuilderDemandCounts
+        {
+            public BuilderDemandCounts(int openSlots, int constructionSites)
+            {
+                OpenSlots = openSlots;
+                ConstructionSites = constructionSites;
+            }
+
+            public int OpenSlots { get; }
+            public int ConstructionSites { get; }
+        }
+
         private static readonly Dictionary<int, BuilderIndicator> ActiveIndicators = new Dictionary<int, BuilderIndicator>();
 
         private static PropertyInfo _piVillagersService;
@@ -101,6 +113,41 @@ namespace StockAlert.UI.World
         public static int GetIdleBuilderCount()
         {
             return GetBuilderVillagers().Count(villager => villager != null && villager.IsAlive() && IsVillagerIdle(villager));
+        }
+
+        public static BuilderDemandCounts GetBuilderDemandCounts()
+        {
+            var openSlots = 0;
+            var constructionSites = 0;
+
+            foreach (var building in GameAPI.GetConstructionBuildings())
+            {
+                if (building?.BuildingState == null || building.BuildingModel == null)
+                {
+                    continue;
+                }
+
+                if (building.IsFinished() || building.HasInternalBuilders)
+                {
+                    continue;
+                }
+
+                var state = building.BuildingState;
+                var maxBuilders = building.BuildingModel.maxBuilders;
+                if (maxBuilders <= 0)
+                {
+                    continue;
+                }
+
+                var openBuildingSlots = maxBuilders - Math.Max(0, state.builders);
+                if (openBuildingSlots > 0)
+                {
+                    constructionSites++;
+                    openSlots += openBuildingSlots;
+                }
+            }
+
+            return new BuilderDemandCounts(openSlots, constructionSites);
         }
 
         public static bool HasIdleBuilderOfRace(string raceName)

@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.1] - 2026-06-03
+
+### Added
+- Event modifiers with repeating time-based triggers, such as Friend or Foe, now show a countdown badge on their bottom-left HUD icon.
+- The base-game top-left builder counter now shows `available/needed`, where `needed` is how many additional builders could immediately work on active construction sites. It is enabled by default and can be disabled in `BepInEx/config/StockAlert.cfg` with:
+
+[HUD]
+ShowBuilderDemandCounter = false
+
+### Changed
+- Warehouse hauler icon looks nicer.
+
 ## [1.2.0] - 2026-05-28
 
 ### Added

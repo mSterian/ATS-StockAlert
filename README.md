@@ -20,6 +20,10 @@ It can also optionally show the embarkation bonus cost range on the top-left and
 
 It can also optionally show estimated trade route profit as a percentage compared to selling the raw material inputs at the bottom of the production chain.
 
+It also shows a countdown badge on bottom-left event modifier icons when the modifier has a repeating time-based trigger, such as Friend or Foe.
+
+It also changes the base-game top-left builder counter from `available` to `available/needed`, where `needed` is how many additional builders could immediately work on active construction sites.
+
 It can also show an overlay for finding items by Ctrl+clicking an item's icon. The overlay appears above buildings, events, and resource nodes that contain or provide that item.
 
 It can also optionally show a persistent alert when you have idle builders, and optionally pause with an alert 3 seconds before a season ends so you can check trade routes.
@@ -43,6 +47,13 @@ Integrated Builder Icon mod made by ~DGH into my mod with some changes:
 Newly triggered shortages go at the top of the list.
 
 Options for HUD anchor, movable, hideable, building indicators, builder status icons, idle builders alert, queued worker assignments, ingredient wheel building stock, embarkation cost ranges, trade route profit, season ending trade routes alert, Purging Fire auto-adjust, and production limit multiplier are available in the `F8` settings window.
+
+The builder demand counter is enabled by default and is configured only in the BepInEx config file, not the `F8` settings window. To disable it, edit `BepInEx/config/StockAlert.cfg` and set:
+
+```ini
+[HUD]
+ShowBuilderDemandCounter = false
+```
 
 If a good has no production limit, it is ignored by the mod.
 

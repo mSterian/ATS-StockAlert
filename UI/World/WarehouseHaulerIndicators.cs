@@ -1,10 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using Eremite.Buildings;
+using Eremite.MapObjects.UI;
 using StockAlert.Game;
 using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace StockAlert.UI.World
 {
@@ -12,7 +15,10 @@ namespace StockAlert.UI.World
     {
         private static readonly Dictionary<int, WarehouseHaulerIndicator> ActiveIndicators =
             new Dictionary<int, WarehouseHaulerIndicator>();
+        private static readonly FieldInfo LakePanelRetrieveButtonField =
+            typeof(LakePanel).GetField("retrieveButton", BindingFlags.Instance | BindingFlags.NonPublic);
         private static Sprite _haulerSprite;
+        private static Sprite _fallbackHaulerSprite;
 
         public static void Refresh()
         {
@@ -85,6 +91,7 @@ namespace StockAlert.UI.World
                 var iconObject = new GameObject("Icon");
                 iconObject.transform.SetParent(_root.transform, false);
                 iconObject.transform.localPosition = new Vector3(-0.12f, 0f, 0f);
+                iconObject.transform.localScale = Vector3.one * 1.5f;
                 _iconRenderer = iconObject.AddComponent<SpriteRenderer>();
                 _iconRenderer.material = new Material(Shader.Find("Sprites/Default"));
                 _iconRenderer.sprite = GetHaulerSprite();
@@ -118,6 +125,11 @@ namespace StockAlert.UI.World
                 {
                     _countText.text = haulers.ToString();
                     _countText.enabled = true;
+                }
+
+                if (_iconRenderer != null)
+                {
+                    _iconRenderer.sprite = GetHaulerSprite();
                 }
 
                 _root.transform.position = GetMarkerWorldPosition(_storage);
@@ -187,6 +199,17 @@ namespace StockAlert.UI.World
                 return _haulerSprite;
             }
 
+            _haulerSprite = TryGetPondNetsSprite();
+            if (_haulerSprite != null)
+            {
+                return _haulerSprite;
+            }
+
+            if (_fallbackHaulerSprite != null)
+            {
+                return _fallbackHaulerSprite;
+            }
+
             const int size = 64;
             var texture = new Texture2D(size, size, TextureFormat.ARGB32, false)
             {
@@ -199,8 +222,47 @@ namespace StockAlert.UI.World
             texture.SetPixels(Enumerable.Repeat(clear, size * size).ToArray());
             DrawHaulerIcon(texture);
             texture.Apply(false, true);
-            _haulerSprite = Sprite.Create(texture, new Rect(0f, 0f, size, size), new Vector2(0.5f, 0.5f), size);
-            return _haulerSprite;
+            _fallbackHaulerSprite = Sprite.Create(texture, new Rect(0f, 0f, size, size), new Vector2(0.5f, 0.5f), size);
+            return _fallbackHaulerSprite;
+        }
+
+        private static Sprite TryGetPondNetsSprite()
+        {
+            try
+            {
+                var panel = LakePanel.Instance;
+                var retrieveButton = LakePanelRetrieveButtonField?.GetValue(panel) as Button;
+                if (retrieveButton == null)
+                {
+                    return null;
+                }
+
+                var icon = retrieveButton.transform.Find("Icon")?.GetComponent<Image>()
+                           ?? retrieveButton.transform.Find("Mask/Icon")?.GetComponent<Image>();
+                if (icon?.sprite != null)
+                {
+                    return icon.sprite;
+                }
+
+                var images = retrieveButton.GetComponentsInChildren<Image>(true);
+                for (var i = 0; i < images.Length; i++)
+                {
+                    var image = images[i];
+                    if (image != null
+                        && image != retrieveButton.image
+                        && image.sprite != null
+                        && image.name.IndexOf("icon", StringComparison.OrdinalIgnoreCase) >= 0)
+                    {
+                        return image.sprite;
+                    }
+                }
+
+                return retrieveButton.image != null ? retrieveButton.image.sprite : null;
+            }
+            catch
+            {
+                return null;
+            }
         }
 
         private static void DrawHaulerIcon(Texture2D texture)

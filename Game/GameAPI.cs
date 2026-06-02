@@ -61,6 +61,7 @@ namespace StockAlert.Game
         private static PropertyInfo _piFarms;
         private static PropertyInfo _piFarmfields;
         private static PropertyInfo _piStorages;
+        private static PropertyInfo _piConstructions;
         private static FieldInfo _fiCurrentNews;
         private static PropertyInfo _piReactiveValue;
 
@@ -1037,6 +1038,40 @@ namespace StockAlert.Game
             }
 
             return result.OfType<Storage>().ToList();
+        }
+
+        public static List<Building> GetConstructionBuildings()
+        {
+            var result = new List<Building>();
+
+            try
+            {
+                var buildingsService = GetBuildingsService();
+                if (buildingsService == null)
+                {
+                    return result;
+                }
+
+                _piConstructions ??= buildingsService.GetType().GetProperty("Constructions", BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
+                var entries = _piConstructions?.GetValue(buildingsService, null) as IDictionary;
+                if (entries == null)
+                {
+                    return result;
+                }
+
+                foreach (DictionaryEntry entry in entries)
+                {
+                    if (entry.Value is Building building)
+                    {
+                        result.Add(building);
+                    }
+                }
+            }
+            catch (Exception)
+            {
+            }
+
+            return result;
         }
 
         public static bool HasFarmFieldWork(Farm farm)

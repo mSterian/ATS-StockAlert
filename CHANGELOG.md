@@ -2,11 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
-## [1.2.2] - 2026-06-05
+## [1.2.3] - 2026-06-05
 
 ### Added
 - Hovering an assigned worker slot or a race portrait in the worker selection wheel now highlights the relevant villager in the world with a bright ring at their feet.
-- Hovering the blueprint reward button now shows unlocked buildings that you currently have zero of, excluding decorations, warehouses, hearths, hydrants, roads, gathering posts, geysers, and similar source-only buildings.
+- Hovering the bottom blightrot icon now shows unlocked buildings that you currently have zero of, with building icons, excluding decorations, houses, warehouses, hearths, hydrants, roads, gathering posts, geysers, and similar source-only buildings.
+
+These new HUD features can be disabled in `BepInEx/config/StockAlert.cfg` by setting either option to `false`, or re-enabled by setting it back to `true`:
 
 [HUD]
 ShowWorkerHoverHighlight = false

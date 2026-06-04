@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using Eremite.View.HUD.Reputation;
+using Eremite.View.HUD.Rainpunk;
 using StockAlert.Config;
 using StockAlert.Game;
 using UnityEngine;
@@ -12,26 +12,30 @@ namespace StockAlert.UI.HUD
 {
     internal sealed class ZeroBuildingBlueprintHover : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
     {
-        private static FieldInfo _fiButton;
+        private static FieldInfo _fiCorruptionButton;
         private static GUIStyle _panelStyle;
         private static GUIStyle _titleStyle;
         private static GUIStyle _itemStyle;
         private static GUIStyle _emptyStyle;
 
         private bool _hovered;
-        private List<string> _buildingNames = new List<string>();
+        private List<BuildingRow> _buildings = new List<BuildingRow>();
         private float _nextRefreshTime;
 
-        public static void Attach(ReputationRewardButton rewardButton)
+        public static void Attach(BlightHUD blightHud)
         {
-            if (!ConfigManager.ShowZeroBuildingBlueprintHover || rewardButton == null)
+            if (!ConfigManager.ShowZeroBuildingBlueprintHover || blightHud == null)
             {
                 return;
             }
 
-            _fiButton ??= typeof(ReputationRewardButton).GetField("button", BindingFlags.Instance | BindingFlags.NonPublic);
-            var button = _fiButton?.GetValue(rewardButton) as Button;
-            var target = button != null ? button.gameObject : rewardButton.gameObject;
+            _fiCorruptionButton ??= typeof(BlightHUD).GetField("corruptionButton", BindingFlags.Instance | BindingFlags.NonPublic);
+            var button = _fiCorruptionButton?.GetValue(blightHud) as Button;
+            Attach(button != null ? button.gameObject : blightHud.gameObject);
+        }
+
+        private static void Attach(GameObject target)
+        {
             if (target == null || target.GetComponent<ZeroBuildingBlueprintHover>() != null)
             {
                 return;
@@ -82,14 +86,14 @@ namespace StockAlert.UI.HUD
 
             const float width = 360f;
             const float titleHeight = 28f;
-            const float lineHeight = 19f;
+            const float lineHeight = 36f;
+            const float iconSize = 31f;
             const float padding = 12f;
-            var shownCount = Mathf.Min(_buildingNames.Count, 18);
-            var hasMore = _buildingNames.Count > shownCount;
+            var shownCount = Mathf.Min(_buildings.Count, 14);
+            var hasMore = _buildings.Count > shownCount;
             var height = padding * 2f + titleHeight + (shownCount > 0 ? shownCount * lineHeight : 28f) + (hasMore ? lineHeight : 0f);
-            var mouse = Event.current.mousePosition;
-            var x = Mathf.Min(mouse.x + 18f, Screen.width - width - 8f);
-            var y = Mathf.Min(mouse.y + 18f, Screen.height - height - 8f);
+            var x = Screen.width - width - 24f;
+            var y = Screen.height - height - 24f;
             x = Mathf.Max(8f, x);
             y = Mathf.Max(8f, y);
 
@@ -98,7 +102,7 @@ namespace StockAlert.UI.HUD
             GUI.Label(new Rect(x + padding, y + padding, width - padding * 2f, titleHeight), "Unlocked buildings with 0 placed", _titleStyle);
 
             var lineY = y + padding + titleHeight;
-            if (_buildingNames.Count == 0)
+            if (_buildings.Count == 0)
             {
                 GUI.Label(new Rect(x + padding, lineY, width - padding * 2f, 28f), "None right now.", _emptyStyle);
                 return;
@@ -106,24 +110,46 @@ namespace StockAlert.UI.HUD
 
             for (var i = 0; i < shownCount; i++)
             {
-                GUI.Label(new Rect(x + padding, lineY, width - padding * 2f, lineHeight), _buildingNames[i], _itemStyle);
+                var row = _buildings[i];
+                DrawSprite(row.Icon, new Rect(x + padding, lineY + 2.5f, iconSize, iconSize));
+                GUI.Label(new Rect(x + padding + iconSize + 9f, lineY + 5f, width - padding * 2f - iconSize - 9f, lineHeight), row.Name, _itemStyle);
                 lineY += lineHeight;
             }
 
             if (hasMore)
             {
-                GUI.Label(new Rect(x + padding, lineY, width - padding * 2f, lineHeight), $"+ {_buildingNames.Count - shownCount} more", _emptyStyle);
+                GUI.Label(new Rect(x + padding, lineY, width - padding * 2f, lineHeight), $"+ {_buildings.Count - shownCount} more", _emptyStyle);
             }
         }
 
         private void RefreshList()
         {
             _nextRefreshTime = Time.unscaledTime + 0.5f;
-            _buildingNames = GameAPI.GetUnlockedZeroCountBuildings()
-                .Select(info => GameAPI.GetBuildingDisplayName(info.Model))
-                .Where(name => !string.IsNullOrWhiteSpace(name))
-                .Distinct()
+            _buildings = GameAPI.GetUnlockedZeroCountBuildings()
+                .Select(info => new BuildingRow(GameAPI.GetBuildingDisplayName(info.Model), info.Model?.icon))
+                .Where(row => !string.IsNullOrWhiteSpace(row.Name))
+                .GroupBy(row => row.Name)
+                .Select(group => group.First())
                 .ToList();
+        }
+
+        private static void DrawSprite(Sprite sprite, Rect rect)
+        {
+            var texture = sprite?.texture;
+            if (texture == null)
+            {
+                return;
+            }
+
+            var textureRect = sprite.textureRect;
+            var texCoords = new Rect(
+                textureRect.x / texture.width,
+                textureRect.y / texture.height,
+                textureRect.width / texture.width,
+                textureRect.height / texture.height
+            );
+
+            GUI.DrawTextureWithTexCoords(rect, texture, texCoords, true);
         }
 
         private static void EnsureStyles()
@@ -180,6 +206,19 @@ namespace StockAlert.UI.HUD
 
             texture.Apply(false, true);
             return texture;
+        }
+
+        private readonly struct BuildingRow
+        {
+            public BuildingRow(string name, Sprite icon)
+            {
+                Name = name;
+                Icon = icon;
+            }
+
+            public string Name { get; }
+
+            public Sprite Icon { get; }
         }
     }
 }

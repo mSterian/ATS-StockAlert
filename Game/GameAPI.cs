@@ -1090,6 +1090,7 @@ namespace StockAlert.Game
             if (prefab is Decoration ||
                 prefab is Storage ||
                 prefab is Hearth ||
+                prefab is House ||
                 prefab is Hydrant ||
                 prefab is Road ||
                 prefab is GathererHut ||
@@ -1103,6 +1104,7 @@ namespace StockAlert.Game
             var name = (model.Name ?? string.Empty) + " " + GetBuildingDisplayName(model);
             return name.IndexOf("Geyser", StringComparison.OrdinalIgnoreCase) >= 0 ||
                    name.IndexOf("Small Warehouse", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                   name.IndexOf("House", StringComparison.OrdinalIgnoreCase) >= 0 ||
                    name.IndexOf("Road", StringComparison.OrdinalIgnoreCase) >= 0 ||
                    name.IndexOf("Hydrant", StringComparison.OrdinalIgnoreCase) >= 0 ||
                    name.IndexOf("Hearth", StringComparison.OrdinalIgnoreCase) >= 0;

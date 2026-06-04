@@ -130,7 +130,7 @@ namespace StockAlert.Config
                 "HUD",
                 "ShowZeroBuildingBlueprintHover",
                 true,
-                "Show unlocked buildings with zero placed when hovering the blueprint reward button."
+                "Show unlocked buildings with zero placed when hovering the bottom blightrot icon."
             );
             _avoidAssigningCarryingBuilders = _config.Bind(
                 "Workers",

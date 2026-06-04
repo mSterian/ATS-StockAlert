@@ -28,7 +28,7 @@ When assigning a villager to a building from the builders pool, it also preserve
 
 Hovering an assigned worker slot or a race portrait in the worker selection wheel shows a bright ring at the feet of the villager who is assigned or would be assigned.
 
-Hovering the blueprint reward button shows unlocked buildings that you currently have zero of, excluding decorations, warehouses, hearths, hydrants, roads, gathering posts, geysers, and similar source-only buildings.
+Hovering the bottom blightrot icon shows unlocked buildings that you currently have zero of, with building icons, excluding decorations, houses, warehouses, hearths, hydrants, roads, gathering posts, geysers, and similar source-only buildings.
 
 It can also show an overlay for finding items by Ctrl+clicking an item's icon. The overlay appears above buildings, events, and resource nodes that contain or provide that item.
 
@@ -135,12 +135,12 @@ AvoidAssigningCarryingBuilders = false
 ShowWorkerHoverHighlight = false
 ```
 
-## Blueprint reward zero-building hover
+## Blightrot zero-building hover
 
 - enabled by default
-- hovering the blueprint reward button shows unlocked buildings that you currently have zero of
-- excludes decorations, warehouses, hearths, hydrants, roads, gathering posts, geysers, and similar source-only buildings
-- to disable it, edit `BepInEx/config/StockAlert.cfg` and set:
+- hovering the bottom blightrot icon shows unlocked buildings that you currently have zero of, with building icons
+- excludes decorations, houses, warehouses, hearths, hydrants, roads, gathering posts, geysers, and similar source-only buildings
+- to disable it, edit `BepInEx/config/StockAlert.cfg` and set `ShowZeroBuildingBlueprintHover = false`; set it back to `true` to re-enable it:
 
 ```ini
 [HUD]

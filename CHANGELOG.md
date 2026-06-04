@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.2] - 2026-06-05
+
+### Added
+- Hovering an assigned worker slot or a race portrait in the worker selection wheel now highlights the relevant villager in the world with a bright ring at their feet.
+- Hovering the blueprint reward button now shows unlocked buildings that you currently have zero of, excluding decorations, warehouses, hearths, hydrants, roads, gathering posts, geysers, and similar source-only buildings.
+
+[HUD]
+ShowWorkerHoverHighlight = false
+ShowZeroBuildingBlueprintHover = false
+
+### Changed
+- When assigning a villager from the builders pool, Stock Alert now keeps the base game's normal builder scoring formula of break status plus distance, but adds a penalty for builders who are currently carrying goods. This makes hauling builders less likely to drop their delivery when another suitable builder can be assigned.
+- Building shortage indicators now turn grey when a building has enabled shortage recipes, but none can currently be produced because ingredients are missing.
+
+[Workers]
+AvoidAssigningCarryingBuilders = false
+
 ## [1.2.1] - 2026-06-03
 
 ### Added

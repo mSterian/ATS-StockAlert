@@ -236,6 +236,12 @@ namespace StockAlert.Game.Discovery
             return CanSatisfyIngredientSets(recipeModel.requiredGoods, 0, availableAmounts);
         }
 
+        public static bool CanRecipeContinue(IWorkshop workshop, WorkshopRecipeModel recipeModel)
+        {
+            var availableGlobalAmounts = Goods.ToDictionary(g => g.Id, g => g.CurrentAmount, StringComparer.OrdinalIgnoreCase);
+            return CanRecipeContinue(workshop, recipeModel, availableGlobalAmounts);
+        }
+
         private static bool CanSatisfyIngredientSets(GoodsSet[] ingredientSets, int setIndex, Dictionary<string, int> availableAmounts)
         {
             if (ingredientSets == null || setIndex >= ingredientSets.Length)

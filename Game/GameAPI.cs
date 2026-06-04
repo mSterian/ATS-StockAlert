@@ -81,6 +81,19 @@ namespace StockAlert.Game
             public BuildingModel SourceModel { get; }
         }
 
+        public sealed class BuildingCountInfo
+        {
+            public BuildingCountInfo(BuildingModel model, int count)
+            {
+                Model = model;
+                Count = count;
+            }
+
+            public BuildingModel Model { get; }
+
+            public int Count { get; }
+        }
+
         public static Settings GetSettings()
         {
             if (_piMbSettings == null)
@@ -726,6 +739,48 @@ namespace StockAlert.Game
             return recipes;
         }
 
+        public static List<BuildingCountInfo> GetUnlockedZeroCountBuildings()
+        {
+            var result = new List<BuildingCountInfo>();
+
+            try
+            {
+                var settings = GetSettings();
+                if (settings == null)
+                {
+                    return result;
+                }
+
+                var existingCounts = GetPlacedBuildingCountsByModel();
+                var seenModels = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                foreach (var model in EnumerateBuildingModels(settings))
+                {
+                    if (model == null ||
+                        string.IsNullOrWhiteSpace(model.Name) ||
+                        !seenModels.Add(model.Name) ||
+                        !model.HasAccessTo() ||
+                        !IsBuildingUnlocked(model) ||
+                        ShouldExcludeFromZeroBuildingOverview(model))
+                    {
+                        continue;
+                    }
+
+                    existingCounts.TryGetValue(model.Name, out var count);
+                    if (count == 0)
+                    {
+                        result.Add(new BuildingCountInfo(model, count));
+                    }
+                }
+
+                result.Sort((left, right) => string.Compare(GetBuildingDisplayName(left.Model), GetBuildingDisplayName(right.Model), StringComparison.OrdinalIgnoreCase));
+            }
+            catch (Exception)
+            {
+            }
+
+            return result;
+        }
+
         private static void AddUnlockedRecipeGoodsFromModels(IEnumerable<BuildingModel> buildingModels, HashSet<string> goods)
         {
             if (buildingModels == null)
@@ -935,6 +990,122 @@ namespace StockAlert.Game
                     goods.Add(productName);
                 }
             }
+        }
+
+        public static string GetBuildingDisplayName(BuildingModel model)
+        {
+            var localized = model?.displayName?.ToString();
+            if (!string.IsNullOrWhiteSpace(localized) &&
+                localized.IndexOf("Missing key", StringComparison.OrdinalIgnoreCase) < 0)
+            {
+                return localized;
+            }
+
+            return model?.Name ?? "Unknown Building";
+        }
+
+        private static IEnumerable<BuildingModel> EnumerateBuildingModels(Settings settings)
+        {
+            if (settings == null)
+            {
+                yield break;
+            }
+
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var field in settings.GetType().GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic))
+            {
+                if (!typeof(IEnumerable).IsAssignableFrom(field.FieldType) ||
+                    field.FieldType == typeof(string))
+                {
+                    continue;
+                }
+
+                if (!(field.GetValue(settings) is IEnumerable values))
+                {
+                    continue;
+                }
+
+                foreach (var value in values)
+                {
+                    if (value is BuildingModel model &&
+                        !string.IsNullOrWhiteSpace(model.Name) &&
+                        seen.Add(model.Name))
+                    {
+                        yield return model;
+                    }
+                }
+            }
+        }
+
+        private static Dictionary<string, int> GetPlacedBuildingCountsByModel()
+        {
+            var counts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+
+            try
+            {
+                var buildingsService = GetBuildingsService();
+                if (buildingsService == null)
+                {
+                    return counts;
+                }
+
+                var buildingsProperty = buildingsService.GetType().GetProperty("Buildings", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+                var buildings = buildingsProperty?.GetValue(buildingsService, null) as IDictionary;
+                if (buildings == null)
+                {
+                    return counts;
+                }
+
+                foreach (DictionaryEntry entry in buildings)
+                {
+                    if (!(entry.Value is Building building))
+                    {
+                        continue;
+                    }
+
+                    var modelName = building.BuildingModel?.Name ?? building.ModelName;
+                    if (string.IsNullOrWhiteSpace(modelName))
+                    {
+                        continue;
+                    }
+
+                    counts[modelName] = counts.TryGetValue(modelName, out var current) ? current + 1 : 1;
+                }
+            }
+            catch (Exception)
+            {
+            }
+
+            return counts;
+        }
+
+        private static bool ShouldExcludeFromZeroBuildingOverview(BuildingModel model)
+        {
+            if (model == null)
+            {
+                return true;
+            }
+
+            var prefab = model.Prefab;
+            if (prefab is Decoration ||
+                prefab is Storage ||
+                prefab is Hearth ||
+                prefab is Hydrant ||
+                prefab is Road ||
+                prefab is GathererHut ||
+                prefab is Camp ||
+                prefab is FishingHut ||
+                prefab is Extractor)
+            {
+                return true;
+            }
+
+            var name = (model.Name ?? string.Empty) + " " + GetBuildingDisplayName(model);
+            return name.IndexOf("Geyser", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                   name.IndexOf("Small Warehouse", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                   name.IndexOf("Road", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                   name.IndexOf("Hydrant", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                   name.IndexOf("Hearth", StringComparison.OrdinalIgnoreCase) >= 0;
         }
 
         private static bool IsBuildingUnlocked(BuildingModel buildingModel)

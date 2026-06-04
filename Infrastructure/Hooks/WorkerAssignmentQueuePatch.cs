@@ -11,6 +11,7 @@ using StockAlert.Config;
 using StockAlert.Game;
 using StockAlert.UI.World;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
@@ -24,6 +25,7 @@ namespace StockAlert.Infrastructure.Hooks
         private static void BuildingWorkerSlotSetUpPostfix(BuildingWorkerSlot __instance)
         {
             QueuedWorkerSlotCompanion.Attach(__instance);
+            WorkerSlotHoverHighlighter.Attach(__instance);
         }
 
         [HarmonyPatch(typeof(BuildingWorkerSlot), "OnRacePicked")]
@@ -104,6 +106,21 @@ namespace StockAlert.Infrastructure.Hooks
         private static void RacesMenuSlotSetUpPostfix(RacesMenuSlot __instance)
         {
             IdleBuilderRaceMenuMarker.Attach(__instance);
+            WorkerRaceMenuHoverHighlighter.Attach(__instance);
+        }
+
+        [HarmonyPatch(typeof(RacesMenuSlot), "OnPointerEnter")]
+        [HarmonyPostfix]
+        private static void RacesMenuSlotOnPointerEnterPostfix(RacesMenuSlot __instance, PointerEventData eventData)
+        {
+            WorkerRaceMenuHoverHighlighter.ShowCandidate(__instance);
+        }
+
+        [HarmonyPatch(typeof(RacesMenuSlot), "OnPointerExit")]
+        [HarmonyPostfix]
+        private static void RacesMenuSlotOnPointerExitPostfix(RacesMenuSlot __instance, PointerEventData eventData)
+        {
+            WorkerHoverRing.Hide();
         }
 
         [HarmonyPatch(typeof(RacesMenu), "OnClicked")]

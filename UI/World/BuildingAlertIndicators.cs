@@ -18,6 +18,8 @@ namespace StockAlert.UI.World
     {
         private const int MaxProductIcons = 4;
         private const int ProductIconGridRows = 2;
+        private const int ProductIconSortingOrderOffset = 100;
+        private const float ProductIconForwardOffset = -0.05f;
         private const float ProductIconBorderThicknessScale = 0.08f;
         private const string ProductIconBorderRootName = "IngredientBlockedBorder";
         private const string ProductIconsRootName = "StockAlertProductIcons";
@@ -25,6 +27,7 @@ namespace StockAlert.UI.World
         private static readonly Color WhiteColor = Color.white;
         private static readonly Color RedColor = new Color(1f, 0.25f, 0.25f, 1f);
         private static readonly Color YellowColor = new Color(1f, 0.85f, 0.2f, 1f);
+        private static readonly Color GreyColor = new Color(0.48f, 0.48f, 0.48f, 1f);
         private static readonly Color BorderRedColor = new Color(0.62f, 0.04f, 0.04f, 1f);
 
         private static readonly Dictionary<int, IndicatorSnapshot> LastApplied =
@@ -174,8 +177,12 @@ namespace StockAlert.UI.World
             var maxWorkers = building.Workplaces?.Length ?? 0;
             var lowProductGoods = GetEnabledLowRecipeGoods(workshop, lowGoods);
             var hasRelevantLowRecipe = lowProductGoods.Count > 0;
+            var hasCraftableLowRecipe = hasRelevantLowRecipe && HasCraftableEnabledLowRecipe(workshop, lowGoods, settings);
             var hasRelevantIngredientSupplyRecipe = workshop.Recipes.Any(r => IsEnabledGatheringSupplyRecipe(r, blockedIngredientGoods, settings));
             var hasRelevantWork = hasRelevantLowRecipe || hasRelevantIngredientSupplyRecipe;
+            var hasOnlyIngredientBlockedWork = hasRelevantLowRecipe &&
+                                               !hasCraftableLowRecipe &&
+                                               !hasRelevantIngredientSupplyRecipe;
 
             var active = false;
             var color = WhiteColor;
@@ -183,12 +190,12 @@ namespace StockAlert.UI.World
             if (workerCount == 0)
             {
                 active = true;
-                color = hasRelevantWork ? RedColor : WhiteColor;
+                color = hasOnlyIngredientBlockedWork ? GreyColor : hasRelevantWork ? RedColor : WhiteColor;
             }
             else if (hasRelevantWork && workerCount < maxWorkers)
             {
                 active = true;
-                color = YellowColor;
+                color = hasOnlyIngredientBlockedWork ? GreyColor : YellowColor;
             }
 
             ApplySnapshot(
@@ -341,6 +348,11 @@ namespace StockAlert.UI.World
                 && currentActive == active
                 && ColorsEqual(currentColor, color))
             {
+                if (active && productGoodIds != null && productGoodIds.Count > 0)
+                {
+                    RefreshProductIconRenderOrder(icon);
+                }
+
                 return;
             }
 
@@ -391,6 +403,30 @@ namespace StockAlert.UI.World
             return result;
         }
 
+        private static bool HasCraftableEnabledLowRecipe(IWorkshop workshop, HashSet<string> lowGoods, Settings settings)
+        {
+            if (workshop?.Recipes == null || lowGoods == null || lowGoods.Count == 0 || settings == null)
+            {
+                return false;
+            }
+
+            foreach (var recipeState in workshop.Recipes)
+            {
+                if (!IsEnabledLowRecipe(recipeState, lowGoods))
+                {
+                    continue;
+                }
+
+                var recipeModel = settings.GetWorkshopRecipe(recipeState.model);
+                if (recipeModel != null && Discovery.CanRecipeContinue(workshop, recipeModel))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         private static void ApplyProductIcons(int buildingId, GameObject icon, IReadOnlyList<string> productGoodIds)
         {
             if (icon == null || productGoodIds == null || productGoodIds.Count == 0)
@@ -439,8 +475,7 @@ namespace StockAlert.UI.World
 
                 renderer.sprite = sprite;
                 renderer.color = WhiteColor;
-                renderer.sortingLayerName = baseRenderer.sortingLayerName;
-                renderer.sortingOrder = baseRenderer.sortingOrder + 1;
+                ConfigureProductIconRenderer(renderer, baseRenderer, 1);
                 ApplyProductIconBorder(child, sprite, good.IsIngredientBlocked, baseRenderer);
 
                 var row = shown % ProductIconGridRows;
@@ -476,7 +511,7 @@ namespace StockAlert.UI.World
 
             var root = new GameObject(ProductIconsRootName);
             root.transform.SetParent(icon.transform, false);
-            root.transform.localPosition = Vector3.zero;
+            root.transform.localPosition = new Vector3(0f, 0f, ProductIconForwardOffset);
             root.transform.localRotation = Quaternion.identity;
             root.transform.localScale = Vector3.one;
             return root;
@@ -493,6 +528,23 @@ namespace StockAlert.UI.World
             }
 
             return root.transform.GetChild(index).gameObject;
+        }
+
+        private static void RefreshProductIconRenderOrder(GameObject icon)
+        {
+            var baseRenderer = GetBaseIconRenderers(icon).FirstOrDefault(r => r?.sprite != null);
+            var root = icon?.transform?.Find(ProductIconsRootName);
+            if (baseRenderer == null || root == null)
+            {
+                return;
+            }
+
+            root.localPosition = new Vector3(root.localPosition.x, root.localPosition.y, ProductIconForwardOffset);
+            foreach (var renderer in root.GetComponentsInChildren<SpriteRenderer>(true))
+            {
+                var offset = IsBorderPart(renderer.transform) ? 2 : 1;
+                ConfigureProductIconRenderer(renderer, baseRenderer, offset);
+            }
         }
 
         private static void ApplyProductIconBorder(GameObject productIcon, Sprite sprite, bool active, SpriteRenderer baseRenderer)
@@ -564,11 +616,32 @@ namespace StockAlert.UI.World
             }
 
             renderer.color = BorderRedColor;
-            renderer.sortingLayerName = baseRenderer.sortingLayerName;
-            renderer.sortingOrder = baseRenderer.sortingOrder + 2;
+            ConfigureProductIconRenderer(renderer, baseRenderer, 2);
             renderer.transform.localPosition = new Vector3(x, y, 0f);
             renderer.transform.localRotation = Quaternion.identity;
             renderer.transform.localScale = new Vector3(width, height, 1f);
+        }
+
+        private static void ConfigureProductIconRenderer(SpriteRenderer renderer, SpriteRenderer baseRenderer, int offset)
+        {
+            if (renderer == null || baseRenderer == null)
+            {
+                return;
+            }
+
+            if (baseRenderer.sharedMaterial != null)
+            {
+                renderer.sharedMaterial = baseRenderer.sharedMaterial;
+            }
+
+            renderer.sortingLayerID = baseRenderer.sortingLayerID;
+            renderer.sortingOrder = baseRenderer.sortingOrder + ProductIconSortingOrderOffset + offset;
+        }
+
+        private static bool IsBorderPart(Transform transform)
+        {
+            return transform?.parent != null &&
+                   string.Equals(transform.parent.name, ProductIconBorderRootName, StringComparison.Ordinal);
         }
 
         private static Vector2 GetRendererSizeInIconSpace(Transform iconTransform, SpriteRenderer renderer)

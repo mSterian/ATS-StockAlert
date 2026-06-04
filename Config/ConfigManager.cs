@@ -21,6 +21,9 @@ namespace StockAlert.Config
         private static ConfigEntry<bool> _showBusyBuilderStatusIcons;
         private static ConfigEntry<bool> _showIdleBuildersAlert;
         private static ConfigEntry<bool> _showBuilderDemandCounter;
+        private static ConfigEntry<bool> _showWorkerHoverHighlight;
+        private static ConfigEntry<bool> _showZeroBuildingBlueprintHover;
+        private static ConfigEntry<bool> _avoidAssigningCarryingBuilders;
         private static ConfigEntry<bool> _enableQueuedWorkerAssignments;
         private static ConfigEntry<bool> _showIngredientWheelBuildingStock;
         private static ConfigEntry<bool> _showEmbarkationCostRanges;
@@ -116,6 +119,24 @@ namespace StockAlert.Config
                 "ShowBuilderDemandCounter",
                 true,
                 "Show the top-left vanilla builder counter as available builders over needed builders."
+            );
+            _showWorkerHoverHighlight = _config.Bind(
+                "HUD",
+                "ShowWorkerHoverHighlight",
+                true,
+                "Show a world highlight ring when hovering assigned worker slots or worker selection race portraits."
+            );
+            _showZeroBuildingBlueprintHover = _config.Bind(
+                "HUD",
+                "ShowZeroBuildingBlueprintHover",
+                true,
+                "Show unlocked buildings with zero placed when hovering the blueprint reward button."
+            );
+            _avoidAssigningCarryingBuilders = _config.Bind(
+                "Workers",
+                "AvoidAssigningCarryingBuilders",
+                true,
+                "Prefer free builders who are not carrying goods when assigning a villager from the builders pool."
             );
             _enableQueuedWorkerAssignments = _config.Bind(
                 "HUD",
@@ -380,6 +401,51 @@ namespace StockAlert.Config
             {
                 Load();
                 _showBuilderDemandCounter.Value = value;
+                _config.Save();
+            }
+        }
+
+        public static bool AvoidAssigningCarryingBuilders
+        {
+            get
+            {
+                Load();
+                return _avoidAssigningCarryingBuilders.Value;
+            }
+            set
+            {
+                Load();
+                _avoidAssigningCarryingBuilders.Value = value;
+                _config.Save();
+            }
+        }
+
+        public static bool ShowWorkerHoverHighlight
+        {
+            get
+            {
+                Load();
+                return _showWorkerHoverHighlight.Value;
+            }
+            set
+            {
+                Load();
+                _showWorkerHoverHighlight.Value = value;
+                _config.Save();
+            }
+        }
+
+        public static bool ShowZeroBuildingBlueprintHover
+        {
+            get
+            {
+                Load();
+                return _showZeroBuildingBlueprintHover.Value;
+            }
+            set
+            {
+                Load();
+                _showZeroBuildingBlueprintHover.Value = value;
                 _config.Save();
             }
         }

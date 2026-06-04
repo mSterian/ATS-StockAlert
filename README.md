@@ -24,6 +24,12 @@ It also shows a countdown badge on bottom-left event modifier icons when the mod
 
 It also changes the base-game top-left builder counter from `available` to `available/needed`, where `needed` is how many additional builders could immediately work on active construction sites.
 
+When assigning a villager to a building from the builders pool, it also preserves the game's normal builder choice formula but deprioritizes builders who are currently carrying goods. The base game scores eligible builders by break status plus distance to the target building, with lower scores picked first. Stock Alert adds a penalty to builders carrying goods, so a nearby builder hauling materials is less likely to drop their delivery when another suitable free builder is available.
+
+Hovering an assigned worker slot or a race portrait in the worker selection wheel shows a bright ring at the feet of the villager who is assigned or would be assigned.
+
+Hovering the blueprint reward button shows unlocked buildings that you currently have zero of, excluding decorations, warehouses, hearths, hydrants, roads, gathering posts, geysers, and similar source-only buildings.
+
 It can also show an overlay for finding items by Ctrl+clicking an item's icon. The overlay appears above buildings, events, and resource nodes that contain or provide that item.
 
 It can also optionally show a persistent alert when you have idle builders, and optionally pause with an alert 3 seconds before a season ends so you can check trade routes.
@@ -31,6 +37,7 @@ It can also optionally show a persistent alert when you have idle builders, and 
 It can also optionally highlight recipe buildings in the world when they have an enabled recipe for goods that are currently under threshold:
 - red when the building can help, but has no workers assigned
 - yellow when the building can help, has at least one worker, but is not fully staffed
+- grey when the building has enabled shortage recipes, but none can currently be produced because ingredients are missing
 - normal white vanilla icon when the building is unmanned but none of its recipes are currently under threshold
 
 Building shortage indicators also show the matching shortage product icons next to the worker icon, and also mark farms when fields in range need seasonal work.
@@ -53,6 +60,14 @@ The builder demand counter is enabled by default and is configured only in the B
 ```ini
 [HUD]
 ShowBuilderDemandCounter = false
+```
+
+Some other default-on HUD helpers are also configured only in `BepInEx/config/StockAlert.cfg`, not the `F8` settings window. To disable them, set:
+
+```ini
+[HUD]
+ShowWorkerHoverHighlight = false
+ShowZeroBuildingBlueprintHover = false
 ```
 
 If a good has no production limit, it is ignored by the mod.
@@ -97,6 +112,40 @@ If a good has no production limit, it is ignored by the mod.
 - queued workers only auto-fill when the slot becomes empty and a matching free villager becomes available
 - if multiple slots are waiting for the same race, the oldest queue is filled first
 - queues last only for the current session
+
+## Builder assignment priority
+
+- enabled by default
+- the base game chooses from eligible free builders by scoring break status plus distance to the target building, then picking the lowest score
+- Stock Alert keeps that formula and adds a penalty when a candidate builder is currently carrying goods
+- this makes carrying builders less likely to be pulled away from deliveries when assigning a villager to a building
+- hovering an assigned worker slot highlights that villager in the world with a bright ring at their feet
+- hovering a race portrait in the worker selection wheel highlights the villager who would currently be assigned
+- to disable the carrying-builder assignment priority, edit `BepInEx/config/StockAlert.cfg` and set:
+
+```ini
+[Workers]
+AvoidAssigningCarryingBuilders = false
+```
+
+- to disable the hover highlight ring, edit `BepInEx/config/StockAlert.cfg` and set:
+
+```ini
+[HUD]
+ShowWorkerHoverHighlight = false
+```
+
+## Blueprint reward zero-building hover
+
+- enabled by default
+- hovering the blueprint reward button shows unlocked buildings that you currently have zero of
+- excludes decorations, warehouses, hearths, hydrants, roads, gathering posts, geysers, and similar source-only buildings
+- to disable it, edit `BepInEx/config/StockAlert.cfg` and set:
+
+```ini
+[HUD]
+ShowZeroBuildingBlueprintHover = false
+```
 
 ## Ingredient wheel building stock
 

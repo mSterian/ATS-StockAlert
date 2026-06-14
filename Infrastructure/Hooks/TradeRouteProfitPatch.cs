@@ -193,7 +193,8 @@ namespace StockAlert.Infrastructure.Hooks
 
             var reward = ApplyTradeRouteRewardEffects(new Good(currency.Name, state.price));
             var fuel = ApplyTradeRouteFuelEffects(new Good(fuelModel.Name, state.fuel));
-            var availableRecipes = GameAPI.GetAvailableWorkshopRecipes();
+            var ignoreDisabledRecipes = ConfigManager.TradeRouteProfitIgnoreDisabledRecipes;
+            var availableRecipes = GameAPI.GetAvailableWorkshopRecipes(!ignoreDisabledRecipes, !ignoreDisabledRecipes);
             var requireAvailableRaw = ConfigManager.TradeRouteProfitRequireAvailableRawMaterials;
             var materialCost = ResolveCost(state.good.name, new HashSet<string>(StringComparer.OrdinalIgnoreCase), availableRecipes, 0, requireAvailableRaw);
             var fuelCost = ResolveCost(fuel.name, new HashSet<string>(StringComparer.OrdinalIgnoreCase), availableRecipes, 0, requireAvailableRaw);

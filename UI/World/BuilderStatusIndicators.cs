@@ -132,6 +132,11 @@ namespace StockAlert.UI.World
                     continue;
                 }
 
+                if (!GameAPI.CanConstructionUseBuilders(building))
+                {
+                    continue;
+                }
+
                 var state = building.BuildingState;
                 var maxBuilders = building.BuildingModel.maxBuilders;
                 if (maxBuilders <= 0)

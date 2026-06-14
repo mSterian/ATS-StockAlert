@@ -22,13 +22,15 @@ It can also optionally show estimated trade route profit as a percentage compare
 
 It also shows a countdown badge on bottom-left event modifier icons when the modifier has a repeating time-based trigger, such as Friend or Foe.
 
-It also changes the base-game top-left builder counter from `available` to `available/needed`, where `needed` is how many additional builders could immediately work on active construction sites.
+It also shows alerts when timed orders have 1 minute and 30 seconds remaining.
 
-When assigning a villager to a building from the builders pool, it also preserves the game's normal builder choice formula but deprioritizes builders who are currently carrying goods. The base game scores eligible builders by break status plus distance to the target building, with lower scores picked first. Stock Alert adds a penalty to builders carrying goods, so a nearby builder hauling materials is less likely to drop their delivery when another suitable free builder is available.
+It also changes the base-game top-left builder counter from `available` to `available/needed`, where `needed` is how many additional builders could immediately work on active construction sites. Deactivated construction sites and sites blocked by missing construction materials are not counted.
 
-Hovering an assigned worker slot or a race portrait in the worker selection wheel shows a bright ring at the feet of the villager who is assigned or would be assigned.
+When assigning a villager to a building from the builders pool, it also preserves the game's normal builder choice formula but deprioritizes builders who are currently carrying goods. The base game scores eligible builders by break status plus distance to the target building, with lower scores picked first. Stock Alert adds a penalty to builders carrying goods and a small tie-breaker bonus for idle non-carrying builders, so a nearby builder hauling materials is less likely to drop their delivery when another suitable free builder is available.
 
-Hovering the bottom blightrot icon shows unlocked buildings that you currently have zero of, with building icons, excluding decorations, houses, warehouses, hearths, hydrants, roads, gathering posts, geysers, and similar source-only buildings.
+Hovering an assigned worker slot or a race portrait in the worker selection wheel highlights the villager who is assigned or would be assigned with a bright ring at their feet and a vertical yellow column above them.
+
+Hovering the bottom blightrot icon shows unlocked buildings that you currently have zero of, with building icons, excluding decorations, houses, warehouses, hearths, hydrants, roads, gathering posts, geysers, farm fields, mines, and similar source-only buildings.
 
 It can also show an overlay for finding items by Ctrl+clicking an item's icon. The overlay appears above buildings, events, and resource nodes that contain or provide that item.
 
@@ -40,7 +42,7 @@ It can also optionally highlight recipe buildings in the world when they have an
 - grey when the building has enabled shortage recipes, but none can currently be produced because ingredients are missing
 - normal white vanilla icon when the building is unmanned but none of its recipes are currently under threshold
 
-Building shortage indicators also show the matching shortage product icons next to the worker icon, and also mark farms when fields in range need seasonal work.
+Building shortage indicators also show the matching shortage product icons next to the worker icon, and also mark farms when fields in range need seasonal work. Water-collecting buildings are also marked when their current water type has free tank capacity.
 
 When a good is marked red because it cannot continue production after current in-progress productions, these building indicators can also extend to gathering/source posts that can provide its missing ingredients.
 
@@ -53,7 +55,9 @@ Integrated Builder Icon mod made by ~DGH into my mod with some changes:
 
 Newly triggered shortages go at the top of the list.
 
-Options for HUD anchor, movable, hideable, building indicators, builder status icons, idle builders alert, queued worker assignments, ingredient wheel building stock, embarkation cost ranges, trade route profit, season ending trade routes alert, Purging Fire auto-adjust, and production limit multiplier are available in the `F8` settings window.
+Options for HUD anchor, movable, hideable, building indicators, builder status icons, idle builders alert, timed orders alert, queued worker assignments, ingredient wheel building stock, embarkation cost ranges, trade route profit, season ending trade routes alert, Purging Fire auto-adjust, and production limit multiplier are available in the `F8` settings window.
+
+The timed orders alert is enabled by default and can be disabled in the `F8` settings window.
 
 The builder demand counter is enabled by default and is configured only in the BepInEx config file, not the `F8` settings window. To disable it, edit `BepInEx/config/StockAlert.cfg` and set:
 
@@ -117,9 +121,9 @@ If a good has no production limit, it is ignored by the mod.
 
 - enabled by default
 - the base game chooses from eligible free builders by scoring break status plus distance to the target building, then picking the lowest score
-- Stock Alert keeps that formula and adds a penalty when a candidate builder is currently carrying goods
+- Stock Alert keeps that formula, adds a penalty when a candidate builder is currently carrying goods, and gives idle non-carrying builders a small tie-breaker bonus
 - this makes carrying builders less likely to be pulled away from deliveries when assigning a villager to a building
-- hovering an assigned worker slot highlights that villager in the world with a bright ring at their feet
+- hovering an assigned worker slot highlights that villager in the world with a bright ring at their feet and a vertical yellow column above them
 - hovering a race portrait in the worker selection wheel highlights the villager who would currently be assigned
 - to disable the carrying-builder assignment priority, edit `BepInEx/config/StockAlert.cfg` and set:
 
@@ -128,7 +132,7 @@ If a good has no production limit, it is ignored by the mod.
 AvoidAssigningCarryingBuilders = false
 ```
 
-- to disable the hover highlight ring, edit `BepInEx/config/StockAlert.cfg` and set:
+- to disable the hover highlight marker, edit `BepInEx/config/StockAlert.cfg` and set:
 
 ```ini
 [HUD]
@@ -139,7 +143,7 @@ ShowWorkerHoverHighlight = false
 
 - enabled by default
 - hovering the bottom blightrot icon shows unlocked buildings that you currently have zero of, with building icons
-- excludes decorations, houses, warehouses, hearths, hydrants, roads, gathering posts, geysers, and similar source-only buildings
+- excludes decorations, houses, warehouses, hearths, hydrants, roads, gathering posts, geysers, farm fields, mines, and similar source-only buildings
 - to disable it, edit `BepInEx/config/StockAlert.cfg` and set `ShowZeroBuildingBlueprintHover = false`; set it back to `true` to re-enable it:
 
 ```ini
@@ -168,6 +172,7 @@ ShowZeroBuildingBlueprintHover = false
 - production cost uses the cheapest available recipe chain from unlocked blueprints, following the chain down to raw material inputs
 - recipe costs use the live recipe output amounts shown in buildings, including perks and other production bonuses, falling back to trader sell value for raw or unavailable goods
 - the trade routes screen has an `Available inputs` option to only use recipe chains that can currently be crafted from available raw ingredients
+- the F8 Trade Route Profit options include an off-by-default `Ignore disabled recipes` checkbox to use only enabled recipes from placed production buildings
 - the displayed percentage compares total route profit to the trader sell value of the raw inputs used by that recipe path
 - hover the profit text to see the calculation breakdown
 - trade route reward, packs of provisions, and trader sell value modifiers are included

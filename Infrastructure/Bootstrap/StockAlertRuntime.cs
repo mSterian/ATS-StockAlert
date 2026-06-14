@@ -60,6 +60,7 @@ namespace StockAlert.Infrastructure.Bootstrap
                 BuilderStatusIndicators.Clear();
                 WarehouseHaulerIndicators.Clear();
                 IdleBuildersAlert.Clear();
+                TimedOrdersAlert.Clear();
                 WorkerAssignmentQueue.ClearAll();
                 ItemLocatorOverlay.Clear();
                 ClearSeasonEndingTradeRoutesAlert();
@@ -83,6 +84,7 @@ namespace StockAlert.Infrastructure.Bootstrap
                 BuilderStatusIndicators.Refresh();
                 WarehouseHaulerIndicators.Refresh();
                 IdleBuildersAlert.Refresh();
+                TimedOrdersAlert.Refresh();
             }
 
             if (Time.unscaledTime >= _nextWorkerQueueRefreshTime)

@@ -84,6 +84,17 @@ namespace StockAlert.UI.World
                 ApplyFarmIndicatorState(farm);
             }
 
+            foreach (var rainCatcher in GameAPI.GetRainCatcherBuildings())
+            {
+                if (rainCatcher == null)
+                {
+                    continue;
+                }
+
+                seenBuildings.Add(rainCatcher.Id);
+                ApplyRainCatcherIndicatorState(rainCatcher);
+            }
+
             var removed = LastApplied.Keys.Where(id => !seenBuildings.Contains(id)).ToList();
             foreach (var id in removed)
             {
@@ -102,6 +113,12 @@ namespace StockAlert.UI.World
             var workshop = GetRecipeBuildings().FirstOrDefault(w => ReferenceEquals(w?.Base?.BuildingView, buildingView));
             if (workshop?.Base == null)
             {
+                var rainCatcher = GameAPI.GetRainCatcherBuildings().FirstOrDefault(b => ReferenceEquals(b?.BuildingView, buildingView));
+                if (rainCatcher != null)
+                {
+                    ApplyRainCatcherIndicatorState(rainCatcher);
+                }
+
                 return;
             }
 
@@ -145,6 +162,14 @@ namespace StockAlert.UI.World
                 if (farm != null && restored.Add(farm.Id))
                 {
                     RestoreVanillaFor(farm);
+                }
+            }
+
+            foreach (var rainCatcher in GameAPI.GetRainCatcherBuildings())
+            {
+                if (rainCatcher != null && restored.Add(rainCatcher.Id))
+                {
+                    RestoreVanillaFor(rainCatcher);
                 }
             }
 
@@ -265,6 +290,36 @@ namespace StockAlert.UI.World
             }
 
             ApplySnapshot(farm.Id, icon, active, color, null);
+        }
+
+        private static void ApplyRainCatcherIndicatorState(RainCatcher rainCatcher)
+        {
+            var icon = rainCatcher.BuildingView?.transform?.Find("ToRotate/UI/NoWorkersIcon")?.gameObject;
+            if (icon == null)
+            {
+                return;
+            }
+
+            MakeIconClickThrough(icon);
+            var workerCount = rainCatcher.CountWorkers();
+            var maxWorkers = rainCatcher.Workplaces?.Length ?? 0;
+            var canFillWaterTank = GameAPI.CanRainCatcherFillWaterTank(rainCatcher);
+
+            var active = false;
+            var color = WhiteColor;
+
+            if (workerCount == 0)
+            {
+                active = true;
+                color = canFillWaterTank ? RedColor : WhiteColor;
+            }
+            else if (canFillWaterTank && workerCount < maxWorkers)
+            {
+                active = true;
+                color = YellowColor;
+            }
+
+            ApplySnapshot(rainCatcher.Id, icon, active, color, null);
         }
 
         private static bool HasRelevantGatheringRecipe(ProductionBuilding building, HashSet<string> blockedIngredientGoods)

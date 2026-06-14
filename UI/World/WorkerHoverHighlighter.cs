@@ -7,6 +7,7 @@ using StockAlert.Config;
 using StockAlert.Game;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.Rendering;
 
 namespace StockAlert.UI.World
 {
@@ -114,10 +115,18 @@ namespace StockAlert.UI.World
     internal static class WorkerHoverRing
     {
         private const float RingWorldSize = 0.9f;
+        private const float ColumnWorldWidth = 0.38f;
+        private const float ColumnWorldHeight = 3.1f;
+        private const float ColumnBaseOffset = 0.08f;
         private static GameObject _ringObject;
-        private static SpriteRenderer _renderer;
+        private static Transform _ringTransform;
+        private static Transform _columnTransform;
+        private static SpriteRenderer _ringRenderer;
+        private static SpriteRenderer _columnRenderer;
         private static Transform _target;
         private static Sprite _ringSprite;
+        private static Sprite _columnSprite;
+        private static Renderer[] _targetRenderers;
 
         public static void Show(Villager villager)
         {
@@ -129,12 +138,13 @@ namespace StockAlert.UI.World
             }
 
             EnsureRing();
-            if (_ringObject == null || _renderer == null)
+            if (_ringObject == null || _ringRenderer == null || _columnRenderer == null)
             {
                 return;
             }
 
             _target = actorView.transform;
+            _targetRenderers = actorView.GetComponentsInChildren<Renderer>(true);
             _ringObject.SetActive(true);
             UpdateTransform();
         }
@@ -142,6 +152,7 @@ namespace StockAlert.UI.World
         public static void Hide()
         {
             _target = null;
+            _targetRenderers = null;
             if (_ringObject != null)
             {
                 _ringObject.SetActive(false);
@@ -156,36 +167,120 @@ namespace StockAlert.UI.World
             }
 
             _ringSprite ??= CreateRingSprite();
-            _ringObject = new GameObject("StockAlertWorkerHoverRing");
-            _renderer = _ringObject.AddComponent<SpriteRenderer>();
-            _renderer.sprite = _ringSprite;
-            _renderer.material = new Material(Shader.Find("Sprites/Default"));
-            _renderer.sortingLayerName = "UI";
-            _renderer.sortingOrder = 5200;
+            _columnSprite ??= CreateColumnSprite();
+            _ringObject = new GameObject("StockAlertWorkerHoverMarker");
+            _ringTransform = CreateRendererChild("Ring", _ringSprite, 5200, out _ringRenderer);
+            _columnTransform = CreateRendererChild("Column", _columnSprite, 5201, out _columnRenderer);
+            _columnRenderer.material = CreateAlwaysVisibleColumnMaterial();
             _ringObject.AddComponent<WorkerHoverRingUpdater>();
             _ringObject.SetActive(false);
         }
 
         private static void UpdateTransform()
         {
-            if (_ringObject == null || _target == null || _ringSprite == null)
+            if (_ringObject == null || _target == null || _ringSprite == null || _columnSprite == null)
             {
                 return;
             }
 
-            _ringObject.transform.position = _target.position + new Vector3(0f, 0.035f, 0f);
-            _ringObject.transform.rotation = Quaternion.Euler(90f, 0f, 0f);
+            _ringObject.transform.position = _target.position;
 
-            var maxDimension = Mathf.Max(_ringSprite.bounds.size.x, _ringSprite.bounds.size.y);
-            var baseScale = maxDimension > 0.001f ? RingWorldSize / maxDimension : 1f;
-            var pulse = 1f + Mathf.Sin(Time.unscaledTime * 6f) * 0.06f;
-            _ringObject.transform.localScale = Vector3.one * baseScale * pulse;
-
-            if (_renderer != null)
+            if (_ringTransform != null)
             {
-                var alpha = 0.82f + Mathf.Sin(Time.unscaledTime * 6f) * 0.18f;
-                _renderer.color = new Color(1f, 0.92f, 0.18f, alpha);
+                _ringTransform.localPosition = new Vector3(0f, 0.035f, 0f);
+                _ringTransform.localRotation = Quaternion.Euler(90f, 0f, 0f);
+
+                var maxDimension = Mathf.Max(_ringSprite.bounds.size.x, _ringSprite.bounds.size.y);
+                var baseScale = maxDimension > 0.001f ? RingWorldSize / maxDimension : 1f;
+                var ringPulse = 1f + Mathf.Sin(Time.unscaledTime * 6f) * 0.06f;
+                _ringTransform.localScale = Vector3.one * baseScale * ringPulse;
             }
+
+            var camera = Camera.main;
+            if (_columnTransform != null)
+            {
+                _columnTransform.position = _target.position + Vector3.up * ColumnBaseOffset;
+                if (camera != null)
+                {
+                    _columnTransform.forward = camera.transform.forward;
+                }
+
+                var bounds = _columnSprite.bounds;
+                var widthScale = bounds.size.x > 0.001f ? ColumnWorldWidth / bounds.size.x : 1f;
+                var heightScale = bounds.size.y > 0.001f ? ColumnWorldHeight / bounds.size.y : 1f;
+                var columnPulse = 1f + Mathf.Sin(Time.unscaledTime * 6f) * 0.04f;
+                _columnTransform.localScale = new Vector3(widthScale * columnPulse, heightScale, 1f);
+                ApplyColumnSortingBehindTarget();
+            }
+
+            var alpha = 0.82f + Mathf.Sin(Time.unscaledTime * 6f) * 0.18f;
+            if (_ringRenderer != null)
+            {
+                _ringRenderer.color = new Color(1f, 0.92f, 0.18f, alpha);
+            }
+
+            if (_columnRenderer != null)
+            {
+                _columnRenderer.color = new Color(1f, 0.92f, 0.18f, alpha * 0.75f);
+            }
+        }
+
+        private static Transform CreateRendererChild(string name, Sprite sprite, int sortingOrder, out SpriteRenderer renderer)
+        {
+            var child = new GameObject("StockAlertWorkerHover" + name);
+            child.transform.SetParent(_ringObject.transform, false);
+            renderer = child.AddComponent<SpriteRenderer>();
+            renderer.sprite = sprite;
+            renderer.material = new Material(Shader.Find("Sprites/Default"));
+            renderer.sortingLayerName = "UI";
+            renderer.sortingOrder = sortingOrder;
+            return child.transform;
+        }
+
+        private static void ApplyColumnSortingBehindTarget()
+        {
+            if (_columnRenderer == null || _targetRenderers == null || _targetRenderers.Length == 0)
+            {
+                return;
+            }
+
+            Renderer targetRenderer = null;
+            foreach (var candidate in _targetRenderers)
+            {
+                if (candidate == null || candidate == _columnRenderer)
+                {
+                    continue;
+                }
+
+                if (targetRenderer == null || IsBefore(candidate, targetRenderer))
+                {
+                    targetRenderer = candidate;
+                }
+            }
+
+            if (targetRenderer == null)
+            {
+                return;
+            }
+
+            _columnRenderer.sortingLayerID = targetRenderer.sortingLayerID;
+            _columnRenderer.sortingOrder = targetRenderer.sortingOrder - 1;
+        }
+
+        private static bool IsBefore(Renderer left, Renderer right)
+        {
+            var leftLayer = SortingLayer.GetLayerValueFromID(left.sortingLayerID);
+            var rightLayer = SortingLayer.GetLayerValueFromID(right.sortingLayerID);
+            return leftLayer < rightLayer || leftLayer == rightLayer && left.sortingOrder < right.sortingOrder;
+        }
+
+        private static Material CreateAlwaysVisibleColumnMaterial()
+        {
+            var material = new Material(Shader.Find("GUI/Text Shader") ?? Shader.Find("Sprites/Default"));
+            material.renderQueue = (int)RenderQueue.Overlay;
+            material.SetInt("_ZTest", (int)CompareFunction.Always);
+            material.SetInt("_ZWrite", 0);
+            return material;
         }
 
         private static Sprite CreateRingSprite()
@@ -220,6 +315,40 @@ namespace StockAlert.UI.World
             texture.SetPixels32(pixels);
             texture.Apply(false, true);
             return Sprite.Create(texture, new Rect(0f, 0f, size, size), new Vector2(0.5f, 0.5f), size);
+        }
+
+        private static Sprite CreateColumnSprite()
+        {
+            const int width = 64;
+            const int height = 256;
+            var texture = new Texture2D(width, height, TextureFormat.RGBA32, false);
+            texture.name = "StockAlertWorkerHoverColumnTexture";
+            texture.filterMode = FilterMode.Bilinear;
+            texture.wrapMode = TextureWrapMode.Clamp;
+
+            var centerX = (width - 1) * 0.5f;
+            var pixels = new Color32[width * height];
+            for (var y = 0; y < height; y++)
+            {
+                var normalizedY = y / (float)(height - 1);
+                var widthAtY = Mathf.Lerp(18f, 7f, normalizedY);
+                var verticalFade = Mathf.Sin(normalizedY * Mathf.PI);
+                var topCap = Mathf.Clamp01((1f - normalizedY) / 0.18f);
+                var bottomCap = Mathf.Clamp01(normalizedY / 0.08f);
+                for (var x = 0; x < width; x++)
+                {
+                    var horizontalDistance = Mathf.Abs(x - centerX);
+                    var core = Mathf.Clamp01((widthAtY - horizontalDistance) / 3.5f);
+                    var glow = Mathf.Clamp01((widthAtY + 9f - horizontalDistance) / 9f) * 0.35f;
+                    var alpha = Mathf.Max(core, glow) * verticalFade * topCap * bottomCap;
+
+                    pixels[y * width + x] = new Color(1f, 0.88f, 0.12f, alpha);
+                }
+            }
+
+            texture.SetPixels32(pixels);
+            texture.Apply(false, true);
+            return Sprite.Create(texture, new Rect(0f, 0f, width, height), new Vector2(0.5f, 0f), height);
         }
 
         private sealed class WorkerHoverRingUpdater : MonoBehaviour

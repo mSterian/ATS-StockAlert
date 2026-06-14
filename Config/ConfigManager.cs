@@ -29,7 +29,9 @@ namespace StockAlert.Config
         private static ConfigEntry<bool> _showEmbarkationCostRanges;
         private static ConfigEntry<bool> _showTradeRouteProfit;
         private static ConfigEntry<bool> _tradeRouteProfitRequireAvailableRawMaterials;
+        private static ConfigEntry<bool> _tradeRouteProfitIgnoreDisabledRecipes;
         private static ConfigEntry<bool> _seasonEndingTradeRoutesAlert;
+        private static ConfigEntry<bool> _timedOrdersAlert;
         private static ConfigEntry<bool> _autoAdjustProductionLimits;
         private static ConfigEntry<bool> _autoAdjustPurgingFire;
         private static ConfigEntry<float> _autoAdjustMultiplier;
@@ -168,11 +170,23 @@ namespace StockAlert.Config
                 false,
                 "When calculating trade route profit, only use production recipe chains whose raw inputs are currently available for at least one production cycle."
             );
+            _tradeRouteProfitIgnoreDisabledRecipes = _config.Bind(
+                "HUD",
+                "TradeRouteProfitIgnoreDisabledRecipes",
+                false,
+                "When calculating trade route profit, ignore recipes that are disabled in placed production buildings and recipes from unlocked buildings that are not placed."
+            );
             _seasonEndingTradeRoutesAlert = _config.Bind(
                 "HUD",
                 "SeasonEndingTradeRoutesAlert",
                 false,
                 "Pause 3 seconds before season end and show a reminder to check trade routes."
+            );
+            _timedOrdersAlert = _config.Bind(
+                "HUD",
+                "TimedOrdersAlert",
+                true,
+                "Show alerts when timed orders have 1 minute and 30 seconds remaining."
             );
             _autoAdjustProductionLimits = _config.Bind(
                 "Automation",
@@ -495,6 +509,21 @@ namespace StockAlert.Config
             }
         }
 
+        public static bool TimedOrdersAlert
+        {
+            get
+            {
+                Load();
+                return _timedOrdersAlert.Value;
+            }
+            set
+            {
+                Load();
+                _timedOrdersAlert.Value = value;
+                _config.Save();
+            }
+        }
+
         public static bool ShowIngredientWheelBuildingStock
         {
             get
@@ -551,6 +580,21 @@ namespace StockAlert.Config
             {
                 Load();
                 _tradeRouteProfitRequireAvailableRawMaterials.Value = value;
+                _config.Save();
+            }
+        }
+
+        public static bool TradeRouteProfitIgnoreDisabledRecipes
+        {
+            get
+            {
+                Load();
+                return _tradeRouteProfitIgnoreDisabledRecipes.Value;
+            }
+            set
+            {
+                Load();
+                _tradeRouteProfitIgnoreDisabledRecipes.Value = value;
                 _config.Save();
             }
         }

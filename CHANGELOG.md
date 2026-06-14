@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.4] - 2026-06-14
+
+### Added
+- Added an off-by-default F8 trade route profit option to use only enabled recipes from placed production buildings when calculating recipe chains.
+- Added a default-on F8 option that shows alerts when timed orders have 1 minute and 30 seconds remaining.
+- Building shortage indicators now also mark water-collecting buildings when their current water type has free tank capacity.
+
+### Changed
+- Worker hover highlights now include both the bright ring at the villager's feet and a vertical yellow column for better visibility.
+- Builder assignment priority now gives idle non-carrying builders a small tie-breaker bonus when assigning from the builders pool.
+- The zero-building hover now also excludes farm fields and mines.
+
+### Fixed
+- The builder demand counter no longer counts deactivated construction sites or construction sites blocked by missing materials.
+
 ## [1.2.3] - 2026-06-05
 
 ### Changed

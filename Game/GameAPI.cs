@@ -1,6 +1,8 @@
 using Eremite;
 using Eremite.Model;
+using Eremite.Model.Orders;
 using Eremite.Model.State;
+using Eremite.Services;
 using Eremite.Services.Monitors;
 using System;
 using System.Collections;
@@ -19,9 +21,12 @@ namespace StockAlert.Game
     {
         private static PropertyInfo _piMbSettings;
         private static PropertyInfo _piStorageService;
+        private static PropertyInfo _piRainpunkService;
         private static PropertyInfo _piWorkshopsService;
         private static PropertyInfo _piGameContentService;
         private static PropertyInfo _piRecipesService;
+        private static PropertyInfo _piConstructionService;
+        private static PropertyInfo _piOrdersService;
         private static PropertyInfo _piVillagersService;
         private static PropertyInfo _piBuildingsService;
         private static PropertyInfo _piBlightService;
@@ -60,6 +65,7 @@ namespace StockAlert.Game
         private static PropertyInfo _piCamps;
         private static PropertyInfo _piFarms;
         private static PropertyInfo _piFarmfields;
+        private static PropertyInfo _piRainCatchers;
         private static PropertyInfo _piStorages;
         private static PropertyInfo _piConstructions;
         private static FieldInfo _fiCurrentNews;
@@ -92,6 +98,22 @@ namespace StockAlert.Game
             public BuildingModel Model { get; }
 
             public int Count { get; }
+        }
+
+        public sealed class TimedOrderInfo
+        {
+            public TimedOrderInfo(int id, string displayName, float timeLeft)
+            {
+                Id = id;
+                DisplayName = displayName;
+                TimeLeft = timeLeft;
+            }
+
+            public int Id { get; }
+
+            public string DisplayName { get; }
+
+            public float TimeLeft { get; }
         }
 
         public static Settings GetSettings()
@@ -698,7 +720,7 @@ namespace StockAlert.Game
             return goods;
         }
 
-        public static List<AvailableWorkshopRecipe> GetAvailableWorkshopRecipes()
+        public static List<AvailableWorkshopRecipe> GetAvailableWorkshopRecipes(bool includeDisabledRecipes = true, bool includeUnbuiltUnlockedRecipes = true)
         {
             var recipes = new List<AvailableWorkshopRecipe>();
 
@@ -725,12 +747,20 @@ namespace StockAlert.Game
 
                     foreach (var recipeState in workshop.Recipes)
                     {
+                        if (recipeState == null || (!includeDisabledRecipes && !recipeState.active))
+                        {
+                            continue;
+                        }
+
                         AddAvailableWorkshopRecipe(settings.GetWorkshopRecipe(recipeState.model), workshop.Base, workshop.BaseModel, recipes);
                     }
                 }
 
-                AddUnlockedWorkshopRecipesFromModels(settings.workshops, recipes, constructedModels);
-                AddUnlockedWorkshopRecipesFromModels(settings.blightPosts, recipes, constructedModels);
+                if (includeUnbuiltUnlockedRecipes)
+                {
+                    AddUnlockedWorkshopRecipesFromModels(settings.workshops, recipes, constructedModels);
+                    AddUnlockedWorkshopRecipesFromModels(settings.blightPosts, recipes, constructedModels);
+                }
             }
             catch (Exception)
             {
@@ -1103,6 +1133,8 @@ namespace StockAlert.Game
 
             var name = (model.Name ?? string.Empty) + " " + GetBuildingDisplayName(model);
             return name.IndexOf("Geyser", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                   name.IndexOf("Farm Field", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                   name.IndexOf("Mine", StringComparison.OrdinalIgnoreCase) >= 0 ||
                    name.IndexOf("Small Warehouse", StringComparison.OrdinalIgnoreCase) >= 0 ||
                    name.IndexOf("House", StringComparison.OrdinalIgnoreCase) >= 0 ||
                    name.IndexOf("Road", StringComparison.OrdinalIgnoreCase) >= 0 ||
@@ -1192,6 +1224,46 @@ namespace StockAlert.Game
             return result.OfType<Farm>().ToList();
         }
 
+        public static List<RainCatcher> GetRainCatcherBuildings()
+        {
+            var result = new List<ProductionBuilding>();
+
+            try
+            {
+                var buildingsService = GetBuildingsService();
+                if (buildingsService == null)
+                {
+                    return new List<RainCatcher>();
+                }
+
+                AddProductionBuildingsFromDictionary(buildingsService, "RainCatchers", ref _piRainCatchers, result);
+            }
+            catch (Exception)
+            {
+            }
+
+            return result.OfType<RainCatcher>().ToList();
+        }
+
+        public static bool CanRainCatcherFillWaterTank(RainCatcher rainCatcher)
+        {
+            try
+            {
+                var rainpunkService = GetRainpunkService();
+                var water = rainCatcher?.GetCurrentWaterType();
+                if (rainpunkService == null || water == null)
+                {
+                    return false;
+                }
+
+                return !rainpunkService.AreTanksFull(water);
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
         public static List<Storage> GetStorageBuildings()
         {
             var result = new List<ProductionBuilding>();
@@ -1245,6 +1317,106 @@ namespace StockAlert.Game
             }
 
             return result;
+        }
+
+        public static List<TimedOrderInfo> GetActiveTimedOrders()
+        {
+            var result = new List<TimedOrderInfo>();
+
+            try
+            {
+                var ordersService = GetOrdersService();
+                var settings = GetSettings();
+                if (ordersService?.Orders == null || settings == null)
+                {
+                    return result;
+                }
+
+                foreach (var order in ordersService.Orders)
+                {
+                    if (order == null ||
+                        !order.started ||
+                        !order.picked ||
+                        order.completed ||
+                        string.IsNullOrWhiteSpace(order.model))
+                    {
+                        continue;
+                    }
+
+                    var model = settings.GetOrder(order.model);
+                    if (model == null || !model.canBeFailed || order.timeLeft <= 0f)
+                    {
+                        continue;
+                    }
+
+                    result.Add(new TimedOrderInfo(order.Id, GetOrderDisplayName(model), order.timeLeft));
+                }
+            }
+            catch (Exception)
+            {
+            }
+
+            return result;
+        }
+
+        private static string GetOrderDisplayName(OrderModel model)
+        {
+            var displayName = model?.displayName?.Text;
+            return !string.IsNullOrWhiteSpace(displayName) ? displayName : model?.Name ?? "Timed Order";
+        }
+
+        public static bool CanConstructionUseBuilders(Building building)
+        {
+            if (building?.BuildingState == null || building.BuildingModel == null)
+            {
+                return false;
+            }
+
+            if (building.BuildingState.isSleeping)
+            {
+                return false;
+            }
+
+            return HasEnoughConstructionGoods(building);
+        }
+
+        private static bool HasEnoughConstructionGoods(Building building)
+        {
+            try
+            {
+                var constructionService = GetConstructionService();
+                var deliveredGoods = building?.BuildingState?.deliveredGoods;
+                if (constructionService == null || building?.BuildingModel == null || deliveredGoods == null)
+                {
+                    return false;
+                }
+
+                var cost = constructionService.GetConstructionCostFor(building.BuildingModel);
+                if (cost == null)
+                {
+                    return true;
+                }
+
+                foreach (var good in cost)
+                {
+                    if (string.IsNullOrWhiteSpace(good.name))
+                    {
+                        continue;
+                    }
+
+                    var unreservedRemaining = deliveredGoods.GetUnreservedSpaceLeft(good.name);
+                    if (unreservedRemaining > 0 && GetStoredAmount(null, good.name) < unreservedRemaining)
+                    {
+                        return false;
+                    }
+                }
+
+                return true;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
         }
 
         public static bool HasFarmFieldWork(Farm farm)
@@ -1368,6 +1540,26 @@ namespace StockAlert.Game
             return _piRecipesService?.GetValue(null, null);
         }
 
+        private static IConstructionService GetConstructionService()
+        {
+            if (_piConstructionService == null)
+            {
+                _piConstructionService = typeof(GameMB).GetProperty("ConstructionService", BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
+            }
+
+            return _piConstructionService?.GetValue(null, null) as IConstructionService;
+        }
+
+        private static IOrdersService GetOrdersService()
+        {
+            if (_piOrdersService == null)
+            {
+                _piOrdersService = typeof(GameMB).GetProperty("OrdersService", BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
+            }
+
+            return _piOrdersService?.GetValue(null, null) as IOrdersService;
+        }
+
         private static object GetStorageService()
         {
             if (_piStorageService == null)
@@ -1376,6 +1568,16 @@ namespace StockAlert.Game
             }
 
             return _piStorageService?.GetValue(null, null);
+        }
+
+        private static IRainpunkService GetRainpunkService()
+        {
+            if (_piRainpunkService == null)
+            {
+                _piRainpunkService = typeof(GameMB).GetProperty("RainpunkService", BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
+            }
+
+            return _piRainpunkService?.GetValue(null, null) as IRainpunkService;
         }
 
         private static object GetBuildingsService()

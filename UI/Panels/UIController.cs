@@ -60,7 +60,7 @@ namespace StockAlert.UI.Panels
             private static GUIStyle _fieldStyle;
             private static GUIStyle _sectionStyle;
 
-            private Rect _windowRect = new Rect(40f, 40f, 430f, 445f);
+            private Rect _windowRect = new Rect(40f, 40f, 430f, 470f);
             private string _multiplierInput = "2.0";
             private string _buildingShortageIconScaleInput = "0.90";
             private GameObject _clickBlockerCanvasObject;
@@ -309,6 +309,23 @@ namespace StockAlert.UI.Panels
                     ConfigManager.ShowTradeRouteProfit = showTradeRouteProfit;
                 }
 
+                GUILayout.BeginHorizontal();
+                GUILayout.Space(20f);
+                var previousTradeRouteProfitChildrenEnabled = GUI.enabled;
+                GUI.enabled = previousTradeRouteProfitChildrenEnabled && ConfigManager.ShowTradeRouteProfit;
+                var ignoreDisabledRecipes = GUILayout.Toggle(
+                    ConfigManager.TradeRouteProfitIgnoreDisabledRecipes,
+                    "Ignore disabled recipes",
+                    _toggleStyle
+                );
+                if (ignoreDisabledRecipes != ConfigManager.TradeRouteProfitIgnoreDisabledRecipes)
+                {
+                    ConfigManager.TradeRouteProfitIgnoreDisabledRecipes = ignoreDisabledRecipes;
+                }
+                GUI.enabled = previousTradeRouteProfitChildrenEnabled;
+                GUILayout.FlexibleSpace();
+                GUILayout.EndHorizontal();
+
                 var seasonEndingTradeRoutesAlert = GUILayout.Toggle(
                     ConfigManager.SeasonEndingTradeRoutesAlert,
                     "Season ending trade routes alert",
@@ -317,6 +334,20 @@ namespace StockAlert.UI.Panels
                 if (seasonEndingTradeRoutesAlert != ConfigManager.SeasonEndingTradeRoutesAlert)
                 {
                     ConfigManager.SeasonEndingTradeRoutesAlert = seasonEndingTradeRoutesAlert;
+                }
+
+                var timedOrdersAlert = GUILayout.Toggle(
+                    ConfigManager.TimedOrdersAlert,
+                    "Timed orders alert",
+                    _toggleStyle
+                );
+                if (timedOrdersAlert != ConfigManager.TimedOrdersAlert)
+                {
+                    ConfigManager.TimedOrdersAlert = timedOrdersAlert;
+                    if (!timedOrdersAlert)
+                    {
+                        TimedOrdersAlert.Clear();
+                    }
                 }
 
                 GUILayout.Space(10f);
